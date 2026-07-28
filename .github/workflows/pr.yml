@@ -22,6 +22,11 @@ permissions:
 
 jobs:
   check:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
     # Pinned to a release, not tracked at @main. This repository signs what it
     # publishes; the workflow that shapes the signing should move when someone
     # changes this line, not whenever an unrelated repository is pushed to.
