@@ -12,11 +12,18 @@
 #
 # This does not replace review — it makes review unskippable. Pair it with branch
 # protection requiring review from code owners, or the file is documentation.
-
-*                   @VizzleTF
+#
+# WHAT IS DELIBERATELY NOT HERE: packages/, and any catch-all over the repository.
+# The hourly job's whole purpose is to merge a version bump without a person, and
+# an owner on packages/ would require review on every one of those — which is the
+# same paralysis as the dead auto-merge this replaced, arriving by another route.
+#
+# It does not leave new packages unreviewed. A package this feed has never carried
+# arrives with a key it has never trusted, so the pull request touches keys/ and
+# stops here. An update to a package already carried touches one upstream.sh and
+# nothing else, which is exactly the diff that is safe to merge on evidence.
 
 /keys/              @VizzleTF
-/packages/          @VizzleTF
 /tools/             @VizzleTF
 /.github/           @VizzleTF
 /owfeed.yml         @VizzleTF
