@@ -29,9 +29,21 @@ fi
 TAG="${TAG:-v${VERSION%-r*}}"
 base="https://github.com/${REPO}/releases/download/${TAG}"
 
+# get <url> <dest>
+#
+# --retry, because a release of ninety-odd assets meets a 502 from the CDN sooner or
+# later and a whole publish failing on one is noise, not a finding. Retrying is safe
+# here for the reason it usually is not: every byte fetched is checked against a hash
+# or a signature afterwards, so a retry cannot smuggle anything past.
+get() {
+	curl -fsSL --proto '=https' --tlsv1.2 \
+		--retry 5 --retry-delay 2 --retry-connrefused --retry-all-errors \
+		-o "$2" "$1"
+}
+
 # download <url> <dest> <sha256>
 download() {
-	curl -fsSL --proto '=https' --tlsv1.2 -o "$2" "$1"
+	get "$1" "$2"
 	got="$(sha256sum "$2" | cut -d' ' -f1)"
 	[ "$got" = "$3" ] || { echo "$1: sha256 $got, pinned $3" >&2; rm -f "$2"; exit 1; }
 }
@@ -42,9 +54,26 @@ download() {
 # signature says who produced them, and only that can justify an update merging
 # itself. The key is pinned in this repository: whoever can replace an artifact can
 # replace the signature beside it and the key it names.
+# staged <package> <arch> <file>
+#
+# What this fetch actually put in the tree, so tools/check-tree.sh can compare the
+# built feed against it rather than re-deriving each package's shape. A fetch that
+# half-succeeds is otherwise invisible: `owfeed doctor` reads what is there and
+# cannot see what is missing.
+staged() {
+	mkdir -p "$DIST"
+	printf '%s %s %s\n' "$1" "$2" "$3" >> "$DIST/.staged"
+}
+
+# check_signature <local file> [remote asset name]
+#
+# The remote name is given separately because a package can arrive under one name and
+# be stored under another: release assets are flat, so an apk built for many
+# architectures carries one in its filename that the published package does not.
 check_signature() {
 	[ -n "${SIG_KEY:-}" ] || return 0
-	curl -fsSL --proto '=https' --tlsv1.2 -o "$1.sig" "$base/$(basename "$1").sig"
+	remote="${2:-$(basename "$1")}"
+	get "$base/$remote.sig" "$1.sig"
 	owfeed verify-artifact --key "$ROOT/$SIG_KEY" --key-id "$SIG_KEY_ID" \
 		--signature "$1.sig" "$1"
 	# Evidence for this step, not something to publish: apk has no idea what to do
@@ -62,6 +91,7 @@ apk)
 	echo ">> $NAME $VERSION (25.12)"
 	download "$base/$ARTIFACT" "$dest/$ARTIFACT" "$SHA256"
 	check_signature "$dest/$ARTIFACT"
+	staged "$NAME" noarch "$ARTIFACT"
 
 	# The 24.10 container, when upstream builds one. opkg calls the
 	# architecture-independent package "all" where apk calls it noarch, so it goes
@@ -72,7 +102,71 @@ apk)
 		echo ">> $NAME $VERSION (24.10)"
 		download "$base/$ARTIFACT_IPK" "$dest/$ARTIFACT_IPK" "$SHA256_IPK"
 		check_signature "$dest/$ARTIFACT_IPK"
+		staged "$NAME" all "$ARTIFACT_IPK"
 	fi
+	;;
+
+manifest)
+	# Upstream publishes finished packages and a signed inventory of them.
+	#
+	# The strongest shape there is, and the one that needs the least maintained by
+	# hand here: the manifest carries every package's size and sha256, and its
+	# signature is what makes those trustworthy. So this repository pins the version
+	# and the key, and nothing else -- the checksum table that KIND="apk" needs is
+	# the manifest, verified rather than transcribed.
+	[ -n "${SIG_KEY:-}" ] || { echo "$NAME: KIND=manifest requires SIG_KEY" >&2; exit 1; }
+
+	work="$(mktemp -d)"
+	get "$base/manifest.txt"     "$work/manifest.txt"
+	get "$base/manifest.txt.sig" "$work/manifest.txt.sig"
+
+	# VERIFY BEFORE READING. Every value below steers a download, so parsing first
+	# would mean acting on text nobody has vouched for.
+	owfeed verify-artifact --key "$ROOT/$SIG_KEY" --key-id "$SIG_KEY_ID" \
+		--signature "$work/manifest.txt.sig" "$work/manifest.txt"
+
+	# A signature proves who wrote something, never what it is about. One key often
+	# signs several repositories, so without these two checks a manifest lifted from
+	# another of this author's releases would verify perfectly as this one.
+	got_repo="$(awk '$1=="repo"{print $2; exit}' "$work/manifest.txt")"
+	got_tag="$(awk '$1=="tag"{print $2; exit}' "$work/manifest.txt")"
+	[ "$got_repo" = "$REPO" ] || { echo "$NAME: manifest is for $got_repo, not $REPO" >&2; exit 1; }
+	[ "$got_tag" = "$TAG" ] || { echo "$NAME: manifest is for $got_tag, not $TAG" >&2; exit 1; }
+
+	# pkg <name> <format> <file> <size> <sha256> <arch>
+	awk '$1=="pkg"{print $3, $4, $5, $6, $7}' "$work/manifest.txt" | while read -r fmt file size sum arch; do
+		# opkg calls the architecture-independent package "all" where apk calls it
+		# noarch, so each goes in the directory named for what it says it is.
+		dest="$DIST/$arch"
+		mkdir -p "$dest"
+
+		# The asset name is not the name this gets published under. An apk's
+		# filename carries no architecture -- in a feed the architecture is the
+		# directory -- but release assets are flat, so `owfeed release` appended the
+		# architecture where names collided. Taking it back off restores the name
+		# the index derives, and is exactly the inverse of what put it there.
+		out="$file"
+		case "$fmt" in
+		apk) out="$(printf '%s' "$file" | sed "s/_${arch}\.apk$/.apk/")" ;;
+		esac
+
+		echo ">> $NAME $VERSION $arch ($fmt)"
+		download "$base/$file" "$dest/$out" "$sum"
+
+		got_size="$(wc -c < "$dest/$out" | tr -d ' ')"
+		[ "$got_size" = "$size" ] || { echo "$file: $got_size bytes, manifest says $size" >&2; exit 1; }
+
+		# The manifest's signature already covers this file's hash, so a detached
+		# signature beside it adds nothing here -- it exists for consumers that know
+		# nothing about manifests. Checked when present, not required: an upstream
+		# that publishes a manifest has no reason to also publish ninety signatures
+		# nobody reads.
+		if [ -n "${SIG_PER_PACKAGE:-yes}" ] && [ "${SIG_PER_PACKAGE:-yes}" = "yes" ]; then
+			check_signature "$dest/$out" "$file"
+		fi
+		staged "$NAME" "$arch" "$out"
+	done
+	rm -rf "$work"
 	;;
 
 binaries)

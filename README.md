@@ -54,11 +54,14 @@ everything this feed carries. Signing packages with their authors' keys instead 
 author's key on your router, and each one would be a trust anchor for *every* package name, not just
 theirs.
 
-So the question is what this feed checked before it signed. For the two footstrap packages, the
-author's detached signature is verified against a key pinned in [`keys/`](keys/) before the package
-is ingested — the feed's signature means *the author signed this*. `podkop-updater` upstream
-publishes checksums and no signature, so there the feed attests only that the bytes match a pin a
-person recorded, and its updates wait for a person.
+So the question is what this feed checked before it signed. Every package here is built by its
+author and verified against a key pinned in [`keys/`](keys/) before it is ingested, so the feed's
+signature means *the author signed this* rather than *this downloaded successfully*. Nothing in this
+repository is rebuilt: a feed that rebuilds someone's package ships something they never tested.
+
+`podkop-updater` goes one further and publishes a signed inventory of its whole release, so the
+size and hash of every package come from a document its author signed rather than from a table
+copied into this repository by hand.
 
 ## Before you install the key
 
