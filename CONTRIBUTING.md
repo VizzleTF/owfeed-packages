@@ -285,6 +285,22 @@ Then check three separate things, of which only the first is usually checked:
 [LEGAL.md](LEGAL.md) works through what this feed already carries, including the two cases where
 the answer is not simply yes.
 
+## What auto-merge will not do
+
+`AUTO_MERGE="yes"` asks GitHub to merge once the checks pass. It never skips them, and it is refused
+outright in two cases, because a signature answers *did the author publish this* and not *should
+this go out unread* — an upstream whose release key is stolen signs perfectly.
+
+- **A major version change.** That is where upstream changes what the package is: architectures
+  dropped, files renamed, a configuration format the routers running the old one do not have.
+  Whatever it turns out to be, it is not a decision to make at 04:00 with nobody watching.
+- **A diff touching anything but the pins.** The hourly job rewrites values with `sed`, so a changed
+  line anywhere else is either a bug in that job or an `upstream.sh` edited underneath it. It is
+  also the only way `SIG_KEY_ID` could move, and that would be the verification quietly relaxing
+  itself.
+
+Both still open the pull request. They decline to merge it.
+
 ## Why a pin, and why a key
 
 **Everything downloaded is pinned by sha256 in this repository.** A checksum served by the same host

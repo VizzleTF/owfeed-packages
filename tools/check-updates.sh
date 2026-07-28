@@ -12,6 +12,39 @@
 # installs the result on a real OpenWrt image before anyone merges it.
 set -eu
 
+# may_automerge <upstream.sh> <current version> <latest version>
+#
+# A signature says the author published these bytes. It does not say the release is
+# one this feed should carry without anybody reading it, and the two cases where that
+# gap matters are cheap to name.
+may_automerge() {
+	_up="$1"; _cur="$2"; _new="$3"
+
+	# A major bump is where upstream changes what the package is: dropped
+	# architectures, renamed files, a configuration format that no longer matches
+	# what is on the routers running the old one. Whatever it turns out to be, it is
+	# not a decision to make at 04:00 with nobody watching.
+	if [ "${_cur%%.*}" != "${_new%%.*}" ]; then
+		echo "  major version change ${_cur%%.*} -> ${_new%%.*}: this one wants a person"
+		return 1
+	fi
+
+	# Nothing but the pins may have moved. This job rewrites values with sed, so a
+	# changed line anywhere else means either a bug here or an upstream.sh that was
+	# edited between the checkout and now -- and SIG_KEY_ID moving would be the
+	# whole verification quietly relaxing itself.
+	_bad="$(git diff -U0 -- "$_up" \
+		| grep -E '^[+-][^+-]' \
+		| grep -vE '^[+-](VERSION|TAG|ARTIFACT|ARTIFACT_IPK|SHA256|SHA256_IPK)=' \
+		| grep -vE '^[+-][a-zA-Z0-9_.-]+ +[0-9a-f]{64} +' || true)"
+	if [ -n "$_bad" ]; then
+		echo "  the diff touches more than the pins, so it is not merging itself:"
+		echo "$_bad" | sed 's/^/    /'
+		return 1
+	fi
+	return 0
+}
+
 for up in packages/*/upstream.sh; do
 	dir="$(dirname "$up")"
 	name="$(basename "$dir")"
@@ -34,13 +67,26 @@ for up in packages/*/upstream.sh; do
 
 		tmp="$(mktemp -d)"
 		trap 'rm -rf "$tmp"' EXIT
-		gh release download "v$latest" --repo "$REPO" --dir "$tmp" --pattern '*' >/dev/null
+
+		# Only what this shape needs to recompute its pins. A manifest package pins
+		# no checksums at all -- they are in the manifest, under the author's
+		# signature -- so downloading its ninety-odd assets every hour to look at
+		# none of them would be pure waste.
+		pattern='*'
+		[ "$KIND" = "manifest" ] && pattern='manifest.txt'
+		gh release download "v$latest" --repo "$REPO" --dir "$tmp" --pattern "$pattern" >/dev/null
 
 		# Recompute the pins from the bytes the release actually served, rewriting
 		# values in place. Nothing but data changes, so the diff is readable.
 		sed -i "s|^VERSION=.*|VERSION=\"${latest}-r1\"|" "$up"
 
 		case "$KIND" in
+		manifest)
+			# The tag is the pin. There are no checksums here to recompute: they are
+			# in the manifest, and the author's signature is what makes them worth
+			# anything -- which is why this shape can be trusted to merge itself.
+			sed -i "s|^TAG=.*|TAG=\"v${latest}\"|" "$up"
+			;;
 		apk)
 			file="$(echo "$ARTIFACT" | sed "s/${current}/${latest}/g")"
 			[ -f "$tmp/$file" ] || { echo "$name: v$latest publishes no $file" >&2; exit 1; }
@@ -63,6 +109,13 @@ for up in packages/*/upstream.sh; do
 			' "$up" > "$tmp/new" && mv "$tmp/new" "$up"
 			;;
 		esac
+
+		# Decided here, not after the commit: this reads the working-tree diff, and
+		# once committed there is nothing left to read.
+		automerge=no
+		if [ "$automerge" = "yes" ]; then
+			automerge=yes
+		fi
 
 		if [ -n "${SIG_KEY:-}" ]; then
 			evidence="Upstream publishes a detached signature; it is verified against the pinned key before this is ingested."
@@ -89,7 +142,11 @@ can be merged.")"
 
 		# Auto-merge is offered only where someone other than this feed vouches for the
 		# bytes. This asks GitHub to merge once the checks pass; it does not skip them.
-		if [ "${AUTO_MERGE:-no}" = "yes" ]; then
+		#
+		# Even then it is refused twice over, because a signature answers "did the
+		# author publish this" and not "should it go out unread". An upstream whose
+		# release key is stolen signs perfectly.
+		if [ "$automerge" = "yes" ]; then
 			gh pr merge --squash --auto --delete-branch "$url" >/dev/null
 			echo "$name: will merge itself once the checks pass"
 		fi
