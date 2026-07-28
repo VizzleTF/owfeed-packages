@@ -22,6 +22,11 @@ permissions:
 
 jobs:
   check:
+    # The same block the publish caller needs, and not a mistake. A called
+    # workflow is validated as a whole, so a caller granting less than any of its
+    # jobs declares fails at startup instead of skipping that job -- and feed.yml
+    # has a publish job that deploys to Pages. feed.yml's check job narrows itself
+    # back to `contents: read`, so nothing that actually runs here holds any of it.
     permissions:
       contents: read
       pages: write
@@ -30,9 +35,9 @@ jobs:
     # Pinned to a release, not tracked at @main. This repository signs what it
     # publishes; the workflow that shapes the signing should move when someone
     # changes this line, not whenever an unrelated repository is pushed to.
-    uses: VizzleTF/owfeed/.github/workflows/feed.yml@v0.1.6
+    uses: VizzleTF/owfeed/.github/workflows/feed.yml@v0.1.7
     with:
-      owfeed-version: v0.1.6
+      owfeed-version: v0.1.7
       dry-run: true
       pre-build: for d in packages/*/; do ./tools/fetch.sh "$d"; done
       post-index: ./tools/check-tree.sh

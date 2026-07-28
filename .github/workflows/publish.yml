@@ -4,7 +4,7 @@ name: Publish
 # hand. pr.yml has already moved to the reusable one; this file has not, and the
 # reason is here rather than in a commit message nobody re-reads.
 #
-# owfeed v0.1.6's publish job reads OWFEED_SIGN_KEY from the environment it
+# owfeed v0.1.7's publish job reads OWFEED_SIGN_KEY from the environment it
 # declares rather than taking it as a workflow_call secret, which is what used to
 # force a feed's key out to repository scope. So the migration is unblocked in
 # principle -- and it turns on a detail no documentation states outright: whether a
@@ -49,9 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: VizzleTF/owfeed/setup@v0.1.6
+      - uses: VizzleTF/owfeed/setup@v0.1.7
         with:
-          version: v0.1.6
+          version: v0.1.7
 
       - name: Fetch upstream artifacts
         run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
@@ -79,9 +79,9 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: VizzleTF/owfeed/setup@v0.1.6
+      - uses: VizzleTF/owfeed/setup@v0.1.7
         with:
-          version: v0.1.6
+          version: v0.1.7
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
