@@ -1,4 +1,13 @@
-# Rewritten by tools/check-updates.sh. Data only — no logic here.
+# luci-theme-footstrap — a LuCI theme.
+#
+# Data only. tools/fetch.sh does the work; tools/check-updates.sh rewrites the
+# version and the checksum here and touches nothing else.
+
+# Upstream's CI builds a finished .apk through the OpenWrt SDK, which compiles its
+# CSS and its translation catalogues. Rebuilding it here would ship something the
+# maintainer never tested.
+KIND="apk"
+
 REPO="VizzleTF/luci-theme-footstrap"
 VERSION="0.11.6-r1"
 ARTIFACT="luci-theme-footstrap-0.11.6-r1.apk"
@@ -11,5 +20,5 @@ SIG_KEY="keys/vizzletf-release.pub"
 SIG_KEY_ID="18c63865e2bcf8d6"
 
 # Provenance from someone other than this feed, so an update may merge itself once
-# CI is green. See CONTRIBUTING.md.
+# the checks pass. See CONTRIBUTING.md.
 AUTO_MERGE="yes"

@@ -77,6 +77,12 @@ itself once the checks pass. The checks still have to pass.
 
 ## Adding a package
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: open a pull request with a fetch script and an
-entry in `owfeed.yml`. CI builds, signs and checks it with a throwaway key, so a fork's pull request
-never comes near the feed's own.
+A package here is a file of values — a version, its checksums, which key signs it. There is no
+per-package script.
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — adding a package, updating one, letting it update itself
+  *([Русский](CONTRIBUTING_ru.md))*
+- [RUNBOOK.md](RUNBOOK.md) — what runs when, and what to do when something is red
+  *([Русский](RUNBOOK_ru.md))*
+
+Pull requests run the whole pipeline with a throwaway key, so a fork never comes near the feed's own.
