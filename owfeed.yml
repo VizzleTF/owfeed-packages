@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://owfeed.dev/schema/v1.json
+version: 1
+
+feed:
+  name: owfeed-packages
+  url: https://vizzletf.github.io/owfeed-packages
+  title: owfeed community packages
+  maintainer: "VizzleTF <vizzletf47@gmail.com>"
+  homepage: https://github.com/VizzleTF/owfeed-packages
+
+publish:
+  - target: github-pages
+
+packages:
+  # A static Go binary. It needs the right GOARCH and no OpenWrt SDK at all, which
+  # is why the SDK-less path is not restricted to noarch. One upstream artifact
+  # serves every architecture sharing its GOARCH; packages/podkop-updater/fetch.sh
+  # does that mapping.
+  - name: podkop-updater
+    build: mkpkg
+    arch:
+      - x86_64
+      - aarch64_cortex-a53
+      - aarch64_cortex-a72
+      - aarch64_cortex-a76
+      - aarch64_generic
+      - arm_cortex-a5_vfpv4
+      - arm_cortex-a7
+      - arm_cortex-a7_neon-vfpv4
+      - arm_cortex-a7_vfpv4
+      - arm_cortex-a8_vfpv3
+      - arm_cortex-a9
+      - arm_cortex-a9_neon
+      - arm_cortex-a9_vfpv3-d16
+      - arm_cortex-a15_neon-vfpv4
+      - mips_24kc
+      - mips_mips32
+      - mipsel_24kc
+      - mipsel_24kc_24kf
+      - mipsel_74kc
+      - mipsel_mips32
+    version-from: file:./staging/podkop-updater.version
+    files: ./staging/podkop-updater/{arch}
+    description: "Watches podkop releases and drives update, rollback and restart from Telegram."
+    license: MIT
+    url: https://github.com/VizzleTF/podkop_autoupdater
+    maintainer: "VizzleTF <vizzletf47@gmail.com>"

@@ -1,0 +1,9 @@
+# A published signing key cannot be revoked: apk has no CRL, no expiry, and no way
+# to say a key is dead.
+*.pem
+*.key
+
+dist/
+out/
+staging/
+owfeed

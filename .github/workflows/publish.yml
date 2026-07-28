@@ -1,0 +1,71 @@
+name: Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owfeed-publish
+  cancel-in-progress: false
+
+jobs:
+  # The build job runs the fetch scripts, which execute code from pull requests.
+  # It never sees the signing key.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go install github.com/VizzleTF/owfeed/cmd/owfeed@main
+
+      - name: Fetch upstream artifacts
+        run: for f in packages/*/fetch.sh; do "$f"; done
+
+      - run: owfeed --frozen-lock build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # A protected environment, so the key is out of reach of anything that runs
+    # before a human has looked at it.
+    environment: feed
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go install github.com/VizzleTF/owfeed/cmd/owfeed@main
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist/
+
+      - name: Sign, index and check
+        env:
+          OWFEED_SIGN_KEY: ${{ secrets.OWFEED_SIGN_KEY }}
+        run: |
+          owfeed sign
+          owfeed index
+          owfeed publish
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - uses: actions/deploy-pages@v4
