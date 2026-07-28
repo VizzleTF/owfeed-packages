@@ -288,8 +288,22 @@ the answer is not simply yes.
 ## What auto-merge will not do
 
 `AUTO_MERGE="yes"` asks GitHub to merge once the checks pass. It never skips them, and it is refused
-outright in two cases, because a signature answers *did the author publish this* and not *should
-this go out unread* — an upstream whose release key is stolen signs perfectly.
+outright in the cases below, because a signature answers *did the author publish this* and not
+*should this go out unread* — an upstream whose release key is stolen signs perfectly.
+
+**What your shape earns.** How far an update gets on its own follows from what the signature
+covers, not from how much work went into publishing it.
+
+| Shape | What the signature covers | Automatic updates |
+|---|---|---|
+| `KIND="manifest"` | the whole inventory — every file, size and hash, plus `repo` and `tag` | yes |
+| `KIND="apk"` | each asset, but **not** the list of them | yes, while the set of containers is unchanged |
+| `KIND="binaries"` | nothing — a checksum says the download was not corrupted, never who produced it | never |
+
+That is the honest reason to publish a manifest: `owfeed release` writes one, and an update lands
+within the hour instead of waiting for someone to read it.
+
+Refused in every shape:
 
 - **A major version change.** That is where upstream changes what the package is: architectures
   dropped, files renamed, a configuration format the routers running the old one do not have.
@@ -298,6 +312,14 @@ this go out unread* — an upstream whose release key is stolen signs perfectly.
   line anywhere else is either a bug in that job or an `upstream.sh` edited underneath it. It is
   also the only way `SIG_KEY_ID` could move, and that would be the verification quietly relaxing
   itself.
+- **No `SIG_KEY`.** Then nothing but the transport vouches for the bytes.
+- **More than two automatic updates to one package in a day.** The risk is not one bad release but
+  a run of them: a stolen key can publish a chain of versions faster than anyone reads the
+  notifications, and every one of them verifies. The third waits for a person.
+
+A pull request that adds or changes anything under `keys/` is never merged automatically, whatever
+its `AUTO_MERGE` says — `.github/CODEOWNERS` requires a human review on that directory, because
+adding a key is the entire trust decision compressed into four lines.
 
 Both still open the pull request. They decline to merge it.
 

@@ -159,8 +159,11 @@ they published somewhere else, anything that is not the release you are about to
 **Publishing is not.** The hourly job proposes; it never signs. A job that fetched whatever an
 upstream pushed in the last hour and signed it would hand this feed's key to every upstream at once.
 
-**Merging is not, unless the author signed.** `AUTO_MERGE="yes"` is offered only where a detached
-signature is verified against a pinned key.
+**Merging is not, unless the author signed — and not more than twice a day.** `AUTO_MERGE="yes"` is
+offered only where a detached signature is verified against a pinned key, only for shapes whose
+signature covers what changed (`manifest` always, `apk` while the container set holds, `binaries`
+never), and never for a third update to the same package inside 24 hours. A stolen key publishes a
+chain of releases faster than anyone reads the notifications, and every one of them verifies.
 
 **Architecture coverage is not.** `owfeed.lock` records which architectures the feed publishes for,
 and `--frozen-lock` fails the build when upstream's list moves. Run `owfeed lock --update` and read

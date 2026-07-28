@@ -1,0 +1,24 @@
+# Who has to look before something lands.
+#
+# keys/ is the one that matters. Everything this feed publishes is signed with its
+# own key, and what decides whether an upstream's bytes are worth signing is
+# whether their public key is in that directory. A pull request adding one is not
+# a configuration change; it is the whole trust decision, made once, in a diff
+# that is four lines long and easy to wave through.
+#
+# The rest are here because they decide what runs: tools/ executes against
+# upstream-controlled values, .github/ is the pipeline itself, and owfeed.yml
+# names the URL and the key the feed publishes under.
+#
+# This does not replace review — it makes review unskippable. Pair it with branch
+# protection requiring review from code owners, or the file is documentation.
+
+*                   @VizzleTF
+
+/keys/              @VizzleTF
+/packages/          @VizzleTF
+/tools/             @VizzleTF
+/.github/           @VizzleTF
+/owfeed.yml         @VizzleTF
+/owfeed.lock        @VizzleTF
+/LEGAL.md           @VizzleTF

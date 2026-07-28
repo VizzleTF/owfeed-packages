@@ -12,13 +12,63 @@
 # installs the result on a real OpenWrt image before anyone merges it.
 set -eu
 
-# may_automerge <upstream.sh> <current version> <latest version>
+# may_automerge <upstream.sh> <current version> <latest version> <package name>
 #
 # A signature says the author published these bytes. It does not say the release is
-# one this feed should carry without anybody reading it, and the two cases where that
+# one this feed should carry without anybody reading it, and the cases where that
 # gap matters are cheap to name.
+#
+# What a package is allowed depends on what its signature covers, not on how much
+# its author tried. A manifest is signed over the whole inventory -- every file,
+# every size, every hash -- so an update is mechanical and nothing here has to be
+# transcribed. Finished artifacts are each signed, but the list of them is not, so
+# a change in what a release ships is a change nothing vouches for. Unsigned
+# binaries are vouched for by nobody at all.
 may_automerge() {
-	_up="$1"; _cur="$2"; _new="$3"
+	_up="$1"; _cur="$2"; _new="$3"; _name="$4"
+
+	# The package has to ask, in its own file, and the file is reviewed by a person
+	# when it lands.
+	if [ "${AUTO_MERGE:-no}" != "yes" ]; then
+		echo "  AUTO_MERGE is not yes"
+		return 1
+	fi
+
+	# Nothing merges itself on the strength of a download completing.
+	if [ -z "${SIG_KEY:-}" ]; then
+		echo "  no SIG_KEY: nobody but the transport vouches for these bytes"
+		return 1
+	fi
+
+	case "$KIND" in
+	manifest)
+		: ;;
+	apk)
+		# Tier B. The per-asset signatures do not cover the set of assets, so a
+		# release that starts or stops shipping a container is a change in what the
+		# package IS, and the signatures would still verify. The pin rewrite above
+		# fails loudly when a named artifact is missing; this refuses the quieter
+		# case, where the file set changed in a way that still resolves.
+		if [ -n "${ARTIFACT_IPK:-}" ] && ! grep -q '^ARTIFACT_IPK=' "$_up"; then
+			echo "  the ipk container disappeared from this upstream.sh"
+			return 1
+		fi
+		;;
+	*)
+		echo "  KIND=$KIND carries no signature over anything: this needs a person"
+		return 1
+		;;
+	esac
+
+	# A ceiling, because the failure this guards against is not one bad release but
+	# a run of them: an upstream whose key is stolen can publish a chain of versions
+	# faster than anyone reads the notifications, and every one of them verifies.
+	# Two in a day is already unusual for a package; the third waits for a human.
+	_recent="$(git log --since='24 hours ago' --oneline -- "$_up" | wc -l | tr -d ' ')"
+	if [ "$_recent" -ge 2 ]; then
+		echo "  $_recent automatic updates to $_name in the last day: the next one wants a person"
+		return 1
+	fi
 
 	# A major bump is where upstream changes what the package is: dropped
 	# architectures, renamed files, a configuration format that no longer matches
@@ -92,6 +142,17 @@ for up in packages/*/upstream.sh; do
 			[ -f "$tmp/$file" ] || { echo "$name: v$latest publishes no $file" >&2; exit 1; }
 			sed -i "s|^ARTIFACT=.*|ARTIFACT=\"${file}\"|" "$up"
 			sed -i "s|^SHA256=.*|SHA256=\"$(sha256sum "$tmp/$file" | cut -d' ' -f1)\"|" "$up"
+
+			# The 24.10 container, when upstream ships one. Leaving it pinned to the
+			# previous version does not fail here -- it fails later, when fetch.sh asks
+			# the new release for a filename only the old one had, and every automatic
+			# update of a package serving both lines arrives broken.
+			if [ -n "${ARTIFACT_IPK:-}" ]; then
+				file_ipk="$(echo "$ARTIFACT_IPK" | sed "s/${current}/${latest}/g")"
+				[ -f "$tmp/$file_ipk" ] || { echo "$name: v$latest publishes no $file_ipk" >&2; exit 1; }
+				sed -i "s|^ARTIFACT_IPK=.*|ARTIFACT_IPK=\"${file_ipk}\"|" "$up"
+				sed -i "s|^SHA256_IPK=.*|SHA256_IPK=\"$(sha256sum "$tmp/$file_ipk" | cut -d' ' -f1)\"|" "$up"
+			fi
 			;;
 		binaries)
 			# Rewrite only the checksum column, so the architecture mapping — which is
@@ -113,7 +174,7 @@ for up in packages/*/upstream.sh; do
 		# Decided here, not after the commit: this reads the working-tree diff, and
 		# once committed there is nothing left to read.
 		automerge=no
-		if [ "$automerge" = "yes" ]; then
+		if may_automerge "$up" "$current" "$latest" "$name"; then
 			automerge=yes
 		fi
 
