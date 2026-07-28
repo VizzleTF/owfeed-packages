@@ -1,0 +1,32 @@
+name: Check upstreams
+
+on:
+  schedule:
+    # Hourly. The cost of checking is one API call per package; the cost of not
+    # checking is that a security fix upstream sits unnoticed.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: owfeed-update
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Look for new upstream releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "owfeed-bot"
+          git config user.email "owfeed-bot@users.noreply.github.com"
+          ./tools/check-updates.sh

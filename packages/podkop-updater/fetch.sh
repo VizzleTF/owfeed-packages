@@ -5,9 +5,8 @@
 # that shares its GOARCH. No SDK is involved, and none is needed.
 set -eu
 
-VERSION="0.3.4"
-REPO="VizzleTF/podkop_autoupdater"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+. "$HERE/upstream.sh"
 STAGING="${1:-staging}/podkop-updater"
 
 # GOARCH target -> the OpenWrt architectures it runs on.
@@ -24,21 +23,13 @@ mipsle  mipsel_24kc mipsel_24kc_24kf mipsel_74kc mipsel_mips32
 MAP
 }
 
-# sha256 of each published artifact, recorded from the release. Upstream publishes a
-# .sha256 beside each binary, but a checksum served by the same host from the same
-# release is not a verification of it — pinning here is what makes it one.
+# The pins live in upstream.sh so the update bot rewrites data, never logic.
 sums() {
-	cat <<'SUMS'
-amd64   2d64d66c9fe9ae337a7f7559307256d62f23124c5556ff22e928aa6d8e2f82a8
-arm64   ba045eaa5369c0cc06060cf863d94ef56c157a83afdf0bc1e806f1f2f8b017b1
-armv7   c745f835fef439c6cad00ad85c25dea484e4ac53747253fe2e79ba4c8500b13f
-mips    e3b9f23105dabf33d4f3f4874a2f08c101f3081fd1922427b82e7193b1f2e743
-mipsle  6cb925ec66ff6ff7b39aff5b09d3d60a95e6c0e2ffd8245364590fc444febbff
-SUMS
+	echo "$ARTIFACTS" | awk 'NF { sub(/^podkop_updater-/, "", $1); print $1, $2 }'
 }
 
 mkdir -p "$(dirname "$STAGING")"
-echo "${VERSION}-r1" > "$(dirname "$STAGING")/podkop-updater.version"
+echo "${VERSION}" > "$(dirname "$STAGING")/podkop-updater.version"
 rm -rf "$STAGING"
 
 targets | while read -r goarch arches; do
@@ -46,7 +37,7 @@ targets | while read -r goarch arches; do
 	[ -n "$want" ] || { echo "no checksum pinned for $goarch" >&2; exit 1; }
 
 	tmp="$(mktemp)"
-	url="https://github.com/${REPO}/releases/download/v${VERSION}/podkop_updater-${goarch}"
+	url="https://github.com/${REPO}/releases/download/v${VERSION%-r*}/podkop_updater-${goarch}"
 	echo ">> $goarch"
 	curl -fsSL --proto '=https' --tlsv1.2 -o "$tmp" "$url"
 

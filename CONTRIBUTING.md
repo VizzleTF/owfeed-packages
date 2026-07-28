@@ -5,15 +5,18 @@ throwaway key, so nothing from a fork touches the feed's own key.
 
 ## What a package needs
 
-Two things: a script that produces what should be installed, and an entry in `owfeed.yml`.
-
 ```
-packages/<name>/fetch.sh     produces staging/<name>/… or dist/…
-owfeed.yml                   one entry under packages:
+packages/<name>/upstream.sh   the version and its sha256 pins — data, no logic
+packages/<name>/fetch.sh      sources upstream.sh, downloads, verifies, stages
+owfeed.yml                    one entry under packages:, unless the upstream ships a built .apk
 ```
 
-**`fetch.sh` must pin what it downloads by sha256.** A checksum served by the same host from the
-same release is not a verification of it; a pin recorded in this repository is.
+The split is what lets the hourly job update a package: it rewrites `upstream.sh` and nothing else,
+so the diff a reviewer sees is a version and its checksums.
+
+**Everything downloaded is pinned by sha256.** A checksum served by the same host from the same
+release is not a verification of it — whoever can replace one can replace the other. A pin recorded
+in this repository is.
 
 ## Two shapes
 
@@ -41,7 +44,11 @@ that mapping.
 
 ## What CI will refuse
 
-`owfeed doctor` gates the pull request. The findings that catch most first attempts:
+`owfeed doctor` gates the pull request, and `owfeed smoke` installs the result on a real OpenWrt
+image afterwards — following the published install snippet, and failing if `apk` asks for
+`--allow-untrusted`. Between them they catch a package that builds cleanly and cannot be installed.
+
+The findings that catch most first attempts:
 
 - `arch: all` — apk rejects it. Use `noarch`.
 - `/etc/config/foo` shipped but not in `conffiles:` — sysupgrade would replace the user's settings
@@ -53,4 +60,18 @@ Each finding says what it costs and what to do.
 
 ## Updating a package
 
-Bump the version and the sha256 pins in its `fetch.sh`, in one pull request. Nothing else changes.
+Usually you do not: an hourly job notices new upstream releases and opens the pull request for you,
+with the pins recomputed from the bytes that release served.
+
+To do it by hand, edit `upstream.sh` — the version and the checksums — and open a pull request.
+Nothing else changes.
+
+### Automatic merging
+
+`AUTO_MERGE="yes"` in `upstream.sh` asks GitHub to merge the update once the checks pass. It is
+offered only where the upstream publishes a detached signature beside its artifact, because that is
+provenance from someone other than this feed. Where an upstream publishes checksums alone, an update
+waits for a person: a checksum from the same host as the artifact tells you the download was not
+corrupted, not that it was not replaced.
+
+The checks are not bypassed in either case.
