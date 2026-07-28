@@ -193,7 +193,13 @@ for up in packages/*/upstream.sh; do
 $evidence
 
 Pins recomputed from the bytes the release served."
-		git push -q -u origin "$branch"
+		# --force-with-lease, because a run that pushed the branch and then failed before
+		# opening the pull request leaves it behind, and the next run's push is a
+		# non-fast-forward against it -- so one failure would wedge that package's updates
+		# until somebody deleted the branch by hand. The branch belongs to this job, its
+		# name carries the version, and its content is derived from the release, so
+		# replacing it loses nothing; the lease still refuses if someone else moved it.
+		git push -q -u --force-with-lease origin "$branch"
 
 		url="$(gh pr create --title "$name: $current -> $latest" --body "Upstream released \`v$latest\`.
 
