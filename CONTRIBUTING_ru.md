@@ -80,16 +80,16 @@ AUTO_MERGE="yes"
 `yes`.
 
 ```sh
-# packages/podkop-updater/upstream.sh
+# packages/example-daemon/upstream.sh
 KIND="binaries"
-REPO="VizzleTF/podkop_autoupdater"
-VERSION="0.3.4-r1"
-BINARY_DEST="/usr/bin/podkop_updater"
+REPO="someone/example-daemon"
+VERSION="1.2.0-r1"
+BINARY_DEST="/usr/bin/example-daemon"
 
 # <артефакт>  <sha256>  <архитектуры OpenWrt, на которых он идёт>
 ARTIFACTS="
-podkop_updater-amd64  2d64d66c…  x86_64
-podkop_updater-arm64  ba045eaa…  aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic
+example-daemon-amd64  2d64d66c…  x86_64
+example-daemon-arm64  ba045eaa…  aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic
 "
 AUTO_MERGE="no"
 ```
