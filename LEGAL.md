@@ -24,20 +24,22 @@ things have to hold, and only the first is usually checked:
 |---|---|---|---|
 | `luci-theme-footstrap` | Apache-2.0 | permitted, with NOTICE and change statements | none published |
 | `luci-app-footstrap-updater` | Apache-2.0 | same | none published |
-| `podkop-updater` | **none in the repository** | **see below** | none published |
+| `podkop-updater` | MIT | permitted | none published |
 
-### `podkop-updater` has no licence
+### `podkop-updater` declared a licence it did not have
 
-`VizzleTF/podkop_autoupdater` publishes no `LICENSE` file. Without one, default copyright applies:
-nobody has redistribution rights at all, whatever the repository's visibility suggests.
+`VizzleTF/podkop_autoupdater` published no `LICENSE` file while this feed declared
+`license: MIT` for it. Without one, default copyright applies: nobody has redistribution
+rights at all, whatever the repository's visibility suggests — and the claim was already in
+the index and read back by `apk info` on every router that installed it.
 
-The feed nevertheless declares `license: MIT`, and that claim is now published in the index and read
-back by `apk info` on every router that installs it. The claim has no source.
+Fixed upstream rather than in the feed's metadata, because there was no reality for the
+metadata to match: `podkop_autoupdater` now carries the MIT licence it was being described
+under. Adding the file makes the published claim true; editing the feed would only have made
+it quieter.
 
-It is the feed maintainer's own project, so the fix is one file — but until that file exists, the
-feed is asserting a grant its upstream never made. Adding `LICENSE` to the upstream repository is
-the correct fix; changing the feed's metadata to match reality is not, because there is no reality
-to match.
+The general form is worth keeping: a `license:` field is an assertion about someone else's
+intentions, and it is trivially possible to publish one nobody made.
 
 ## `podkop`, and why it is not enabled
 
