@@ -64,7 +64,10 @@ may_automerge() {
 	# a run of them: an upstream whose key is stolen can publish a chain of versions
 	# faster than anyone reads the notifications, and every one of them verifies.
 	# Two in a day is already unusual for a package; the third waits for a human.
-	_recent="$(git log --since='24 hours ago' --oneline -- "$_up" | wc -l | tr -d ' ')"
+	# Only this job's own commits count. Counting every commit that touched the file
+	# counts the one that added the package, and every hand edit to it since --
+	# which in a young repository is enough to refuse the first real update.
+	_recent="$(git log --since='24 hours ago' --author='owfeed-bot' --oneline -- "$_up" | wc -l | tr -d ' ')"
 	if [ "$_recent" -ge 2 ]; then
 		echo "  $_recent automatic updates to $_name in the last day: the next one wants a person"
 		return 1
