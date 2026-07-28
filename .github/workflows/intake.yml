@@ -27,9 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: VizzleTF/owfeed/setup@v0.1.5
+      - uses: VizzleTF/owfeed/setup@v0.1.6
         with:
-          version: v0.1.5
+          version: v0.1.6
 
       - name: Read the request and answer it
         env:

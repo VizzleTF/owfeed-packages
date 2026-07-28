@@ -16,14 +16,20 @@ Operating the feed. For adding or updating a package, see [CONTRIBUTING.md](CONT
 The split on `main` is the point: the fetch scripts execute values contributed by pull requests, and
 that job has no key. The key appears only after the built bytes are already in an artifact.
 
-**How owfeed gets here.** `VizzleTF/owfeed/setup@v0.1.5`, pinned to a release. The action downloads
+The pull-request row is not a second pipeline that resembles the first. `pr.yml` calls owfeed's
+reusable `feed.yml` with `dry-run: true`, which is the same file the publish path is written from —
+the difference being throwaway keys, no environment and no deploy. `publish.yml` is still written out
+by hand, for the reason at the top of it; the comment there says what has to be true before it moves
+too.
+
+**How owfeed gets here.** `VizzleTF/owfeed/setup@v0.1.6`, pinned to a release. The action downloads
 one binary and checks it against the build attestation from owfeed's own release workflow before
 running it — not against a checksum from the same release, which whoever replaced the binary could
 replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
 nothing: `go install` trusts whatever the module proxy returns for that revision.
 
-Moving to a new owfeed release is two lines in `pr.yml` and three in `publish.yml`, and it should be
-a pull request like anything else. The tool that signs this feed should move when someone changes a
+Moving to a new owfeed release is two lines in `pr.yml`, three in `publish.yml` and one in
+`intake.yml`, and it should be a pull request like anything else. The tool that signs this feed should move when someone changes a
 line, not whenever an unrelated repository is pushed to.
 
 **Two things about the Pages deploy that are easy to break.** `actions/upload-pages-artifact` needs

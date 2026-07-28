@@ -28,24 +28,31 @@ it untrue.
 
 ## Not built, and why
 
-**`publish.yml` and `pr.yml` on owfeed's reusable `feed.yml`.** Both are
-hand-written copies of a workflow owfeed ships, and the usage comment in that
-workflow describes this pipeline. The duplication has a live cost — two pipelines
-mean a green pull request does not prove the published one still works — and it is
-deliberate for now. `feed.yml` used to take the signing keys as `workflow_call`
-secrets, which would have forced them out of the `feed` environment and into
-repository scope, where the hourly update job and every pull-request check could
-reach them. owfeed's publish job now reads the environment secret by name instead,
-so the migration is unblocked in principle; what it waits on is an owfeed release
-carrying that, and one live run confirming which repository's environment
-resolves. Moving a signing key on the strength of a documentation reading is not
-a thing to do to a feed that is already serving routers.
+**`publish.yml` on owfeed's reusable `feed.yml`.** `pr.yml` has moved: it calls
+`feed.yml@v0.1.6` with `dry-run: true`, so a pull request now exercises the same
+file the publish path is written from, with throwaway keys and no environment.
+`publish.yml` has not, and the thing it turns on is narrow: whether a called job's
+`environment:` resolves against the caller's repository, where `feed` exists, or
+the called workflow's, where it does not. GitHub's documentation says the
+environment's secret is used and does not say whose environment. If it is
+owfeed's, the key is unreachable and the publish stops — loudly, and with the last
+deploy still live, but stopped.
 
-**A consumer job in `pr.yml`.** `owfeed smoke` proves the channel installs without
-`--allow-untrusted`; nothing yet proves the package that came through it works.
-`owlab test --feed` is the tool, and its obstacle — how a router in a container
-addresses an HTTP server on the runner — is fixed in owlab by the `{host}` token.
-This lands once that is in an owlab release.
+So the sequencing is: `pr.yml` proves everything about `feed.yml` that does not
+involve the real key, on every pull request and at no risk. When that has been
+green for a while, `publish.yml` becomes the same call with `secrets: inherit` and
+without `dry-run`. Migrating both at once would have meant finding out about the
+environment question from a feed that had stopped publishing.
+
+**A consumer job on top of the check.** `owfeed smoke` proves the channel installs
+without `--allow-untrusted`; nothing yet proves the package that came through it
+works. `owlab test --feed` is the tool and owlab v0.4.0 removed its obstacle — a
+`{host}` in the feed URL resolves to whatever address the router's tier reaches
+the runner at, instead of a `172.17.0.1` that is right on one machine. What is
+missing is where to put it: `feed.yml`'s check job builds the tree and does not
+serve it, so this is either a `post-index` script that serves `out/` and runs
+owlab, or a job in this repository that follows the reusable one. That is a
+decision about whose workflow owns it, not a missing capability.
 
 **CODEOWNERS as a mechanism.** `keys/` is named, and no branch rule enforces the
 review. With a single maintainer a required review blocks every key addition
