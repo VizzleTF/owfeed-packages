@@ -8,13 +8,31 @@ Operating the feed. For adding or updating a package, see [CONTRIBUTING.md](CONT
 
 | when | what | key present? |
 |---|---|---|
-| pull request | fetch → build → sign → index → doctor → smoke (both lines) | throwaway ones |
+| pull request | fetch → build → sign → index → check-tree → doctor → smoke (both lines) | throwaway ones |
 | push to `main` | job 1: fetch → build | **no** |
-| | job 2: sign → index → smoke → verify → publish → Pages | **yes**, behind `environment: feed` |
+| | job 2: sign → index → check-tree → smoke → verify → publish → Pages | **yes**, behind `environment: feed` |
 | hourly | ask each upstream for its latest release; open a pull request if there is one | no |
 
 The split on `main` is the point: the fetch scripts execute values contributed by pull requests, and
 that job has no key. The key appears only after the built bytes are already in an artifact.
+
+**How owfeed gets here.** `VizzleTF/owfeed/setup@v0.1.3`, pinned to a release. The action downloads
+one binary and checks it against the build attestation from owfeed's own release workflow before
+running it — not against a checksum from the same release, which whoever replaced the binary could
+replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
+nothing: `go install` trusts whatever the module proxy returns for that revision.
+
+Moving to a new owfeed release is two lines in `pr.yml` and three in `publish.yml`, and it should be
+a pull request like anything else. The tool that signs this feed should move when someone changes a
+line, not whenever an unrelated repository is pushed to.
+
+**Two things about the Pages deploy that are easy to break.** `actions/upload-pages-artifact` needs
+`include-hidden-files: true` — from v4 it drops dotfiles, and `.nojekyll` is a dotfile. Without it
+Pages runs Jekyll over a tree of binaries and removes every path beginning with a dot or an
+underscore, from a tree that was correct when `owfeed publish` checked it. And `actions/deploy-pages`
+needs `actions: read`, which a `permissions:` block silently withholds by naming other scopes.
+`owfeed verify` reports **OWF514** when the live site has lost `.nojekyll`, because outside the
+deploy is the only place that answer exists.
 
 ---
 

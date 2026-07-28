@@ -17,7 +17,9 @@
 stages: [build, release]
 
 variables:
-  OWFEED_VERSION: "main"
+  # Pin a release. The tool that signs what you publish should move when you change
+  # this line, not whenever owfeed is pushed to.
+  OWFEED_VERSION: "v0.1.3"
 
 build:
   stage: build
@@ -29,7 +31,10 @@ build:
     # epoch every rebuild produces a new identity for byte-identical content.
     SOURCE_DATE_EPOCH: "1700000000"
   script:
-    - go install github.com/VizzleTF/owfeed/cmd/owfeed@${OWFEED_VERSION}
+    - |
+      curl -fsSL -o /usr/local/bin/owfeed \
+        "https://github.com/VizzleTF/owfeed/releases/download/${OWFEED_VERSION}/owfeed-linux-amd64"
+      chmod +x /usr/local/bin/owfeed
     - ./stage.sh                      # your build: produce the directory to package
     - owfeed lock --update
     - owfeed build
@@ -49,11 +54,19 @@ release:
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    # Publish the signed packages as release assets. The feed reads them from here.
-    - |
-      for f in dist/*/*.apk; do
-        sha256sum "$f" | cut -d' ' -f1 > "$f.sha256"
-      done
+    # A signed inventory of the release, and a detached signature beside every
+    # package. This is the step the feed actually reads: it fetches <asset>.sig and
+    # verifies it against the key it has pinned for you, which is what lets its own
+    # signature mean "the author published this" rather than "this downloaded".
+    #
+    # A .sha256 beside the artifact would not do: served by the same host, it says
+    # the download was not corrupted and nothing about who produced it.
+    #
+    # OWFEED_RELEASE_KEY is a usign key from a masked variable -- a different one
+    # from the EC key `owfeed sign` used above. That one goes inside the package and
+    # apk verifies it; this one signs the manifest and usign is what a router can
+    # check with nothing installed.
+    - owfeed release --repo "$CI_PROJECT_PATH" --tag "$CI_COMMIT_TAG"
   release:
     tag_name: $CI_COMMIT_TAG
     description: "Release $CI_COMMIT_TAG"

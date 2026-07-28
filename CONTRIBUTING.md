@@ -17,7 +17,38 @@ owfeed.yml                    a packages: entry, only when owfeed has to build i
 
 ## I want to add a package
 
-Which of two shapes it is depends on what the upstream publishes.
+Which of three shapes it is depends on what the upstream publishes. They are listed best first, and
+the difference is how much this feed has to be told and how much it can verify.
+
+### It publishes packages and a signed manifest — best
+
+Nothing to build, and nothing to transcribe. `owfeed release` writes an inventory of the upstream
+release with every package's size and hash, and signs it; this feed verifies that signature and
+then trusts what is inside. So the pin here is a version and a key, and no checksum table.
+
+```sh
+# packages/podkop-updater/upstream.sh
+KIND="manifest"
+REPO="VizzleTF/podkop_autoupdater"
+VERSION="0.3.5-r1"
+TAG="v0.3.5"
+
+SIG_KEY="keys/podkop-updater.pub"
+SIG_KEY_ID="37ddece4c0eef357"
+AUTO_MERGE="yes"
+```
+
+The manifest is verified **before** it is read, because every value in it steers a download. Its
+`repo` and `tag` lines are checked against the two above: a signature proves who wrote something and
+never what it is about, so without that a manifest lifted from another of the author's releases
+would verify perfectly as this one.
+
+Multi-architecture packages are the reason to prefer this shape. An apk's filename carries no
+architecture — in a feed the architecture is the directory — so twenty architectures mean twenty
+assets with one name, and `owfeed release` appends the architecture where names collide. The
+manifest says which is which; a hand-maintained table would have to say it twice and stay right.
+
+If your upstream does not do this yet, [that side is one command](#i-build-in-my-own-ci-and-want-my-package-in-this-feed).
 
 ### It publishes a built `.apk`
 
@@ -38,10 +69,16 @@ AUTO_MERGE="yes"
 
 That is the whole package. **No entry in `owfeed.yml`** — owfeed is not building anything.
 
-### It publishes binaries or loose files
+### It publishes binaries or loose files — last resort
 
-owfeed builds the package, so there are two files: the values, and an `owfeed.yml` entry describing
-what comes out.
+owfeed builds the package here, so there are two files: the values, and an `owfeed.yml` entry
+describing what comes out.
+
+Prefer either shape above it. Building someone's package in this feed ships something they never
+tested, puts the knowledge of how to build it in a repository that is not theirs — the architecture
+mapping, the init script — and leaves nothing to verify: a `.sha256` served by the same host as the
+binary says the download was not corrupted and nothing about who produced it, which is why
+`AUTO_MERGE` cannot be `yes` for it.
 
 ```sh
 # packages/podkop-updater/upstream.sh
@@ -89,6 +126,9 @@ SHA256="e2e7bde2…"
 ARTIFACT_IPK="luci-theme-footstrap_0.11.6-r1_all.ipk"
 SHA256_IPK="3255edc1…"
 ```
+
+**Upstream publishes a manifest** (`KIND="manifest"`). Nothing to do: the manifest lists every
+package it built, in both formats and every architecture, and each one is placed where it belongs.
 
 **owfeed builds it** (`KIND="binaries"`). Nothing to do: both formats come from the same staged
 payload.
@@ -172,11 +212,28 @@ are a working pair. In short:
 
 ```sh
 owfeed build
-owfeed sign                       # your key, from a masked CI variable
+owfeed sign                       # your EC key, from a masked CI variable
 owfeed doctor --require-origin    # every package says which repository it is from
 owfeed smoke                      # it installs on a real OpenWrt image
-# publish dist/ as release assets
+owfeed release --repo … --tag …   # signed manifest, and a .sig beside every package
+# publish the whole of dist/ as release assets
 ```
+
+**`owfeed release` is the step this feed reads.** It writes a signed inventory of the release and a
+detached signature beside every package, and the hourly job fetches `<asset>.sig` and checks it
+against the key pinned in `keys/`. Without it there is nothing to verify, and the ingest stops
+rather than carrying something it cannot vouch for. A `.sha256` served from the same release does
+not substitute: it says the download was not corrupted and nothing about who produced it.
+
+Two keys, doing different jobs. `owfeed sign` uses an **EC prime256v1** key and the signature goes
+*inside* the package, where apk checks it. `owfeed release` uses a **usign** key and signs the
+manifest, because usign is the scheme OpenWrt already ships and a router can verify it with nothing
+installed. Keep them separate and keep both out of git — neither can be revoked.
+
+Release assets are flat, and an apk's filename carries no architecture: in a feed the architecture
+*is* the directory. So a package built for many architectures would produce many files with one
+name. `release` appends the architecture where names collide, and only there, so a noarch package
+keeps the name it has always had.
 
 `--require-origin` is not ceremony. The `url:` is carried into the index and shown by `apk info` on
 the router, so it is the only thing telling a user who published what they installed. `repo-commit:

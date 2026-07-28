@@ -1,82 +1,79 @@
 #!/bin/sh
-# Assert the built tree carries every package this repository ingests.
+# Assert the built tree carries everything the fetch put in it.
 #
 # `owfeed doctor` reads the tree and asks whether what is there is correct, and it
-# knows about the packages owfeed.yml builds. Neither can see a package that is
-# absent because its fetch produced nothing: the ingest list lives in
-# packages/*/upstream.sh, and that is what this compares against.
+# knows about packages owfeed.yml builds. Neither can see a package that is absent
+# because its fetch produced nothing — and the packages this feed carries are fetched,
+# not built, so owfeed.yml does not list them at all.
 #
-# The failure it exists for is quiet. A tree carrying one of three packages on a
+# The failure this exists for is quiet. A tree carrying one of three packages on a
 # release line passes every other check and publishes an incomplete feed, and the
 # first report comes from a user whose `apk update` stopped offering an upgrade.
+#
+# tools/fetch.sh records each file it stages in dist/.staged, so this compares the
+# built tree against what was actually fetched rather than re-deriving each package's
+# shape. Re-deriving is how the check and the thing it checks drift apart.
 #
 # Usage: tools/check-tree.sh [out]
 set -eu
 
 OUT="${1:-out}"
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DIST="${DIST:-dist}"
+STAGED="$DIST/.staged"
 rc=0
 
-# present <line> <arch> <pattern>
-present() {
-	dir="$OUT/releases/$1/$2"
-	[ -d "$dir" ] || return 1
-	set -- "$dir"/$3
-	[ -e "$1" ]
+[ -f "$STAGED" ] || { echo "$STAGED is missing; run tools/fetch.sh first" >&2; exit 1; }
+
+# apk is 25.12 and later, ipk is 24.10 and earlier. The same split owfeed.yml makes,
+# and the only thing here that has to agree with it.
+line_of() {
+	case "$1" in
+	*.apk) echo "25.12" ;;
+	*.ipk) echo "24.10" ;;
+	*) echo "" ;;
+	esac
 }
 
-# want <line> <arch-list> <pattern> <label>
-#
-# One line per package per release line, not one per architecture: a package that
-# failed to fetch is missing from all of them, and 36 identical lines bury whatever
-# else went wrong.
-want() {
-	line="$1"; arches="$2"; pattern="$3"; label="$4"
-	missing=""; total=0
-	for arch in $arches; do
-		total=$((total + 1))
-		present "$line" "$arch" "$pattern" || missing="$missing $arch"
-	done
-	[ -n "$missing" ] || return 0
-	# shellcheck disable=SC2086
-	set -- $missing
-	echo "MISSING $label on $line: absent from $# of $total architectures (e.g. $1)" >&2
-	rc=1
-}
-
-# The architectures a release line publishes, taken from the tree rather than the
-# lock: a line whose directories are all absent is itself the finding.
+# The architectures a release line publishes, read from the tree: a line whose
+# directories are all absent is itself the finding.
 arches_of() {
 	[ -d "$OUT/releases/$1" ] || return 0
 	find "$OUT/releases/$1" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
 }
 
-for dir in "$ROOT"/packages/*/; do
-	name="$(basename "$dir")"
-	# Each package is read in a subshell so one entry's variables cannot leak into
-	# the next -- upstream.sh files set overlapping names, and a stale ARTIFACT_IPK
-	# would turn a missing package into a passing check.
-	(
-		. "$dir/upstream.sh"
-		[ "${ENABLED:-yes}" = "yes" ] || exit 0
+while read -r name arch file; do
+	[ -n "${name:-}" ] || continue
+	line="$(line_of "$file")"
+	[ -n "$line" ] || { echo "MISSING $name: $file is neither an apk nor an ipk" >&2; rc=1; continue; }
 
-		case "$KIND" in
-		apk)
-			want "25.12" "$(arches_of 25.12)" "$ARTIFACT" "$name $VERSION"
-			[ -n "${ARTIFACT_IPK:-}" ] &&
-				want "24.10" "$(arches_of 24.10)" "$ARTIFACT_IPK" "$name $VERSION"
-			;;
-		binaries)
-			# One artifact serves several architectures; the tree must carry the
-			# package in each of them, under either container.
-			arches="$(echo "$ARTIFACTS" | while read -r _ _ a; do echo "$a"; done)"
-			want "25.12" "$arches" "$name-$VERSION.apk" "$name $VERSION"
-			want "24.10" "$arches" "${name}_${VERSION}_*.ipk" "$name $VERSION"
-			;;
-		esac
-		exit $rc
-	) || rc=1
-done
+	# noarch and all are fanned out to every architecture on their line; anything
+	# else belongs in exactly the one it names.
+	case "$arch" in
+	noarch|all) want="$(arches_of "$line")" ;;
+	*) want="$arch" ;;
+	esac
 
-[ "$rc" -eq 0 ] && echo "every enabled package is present on every line it declares"
+	missing=""; total=0
+	for a in $want; do
+		total=$((total + 1))
+		[ -f "$OUT/releases/$line/$a/$file" ] || missing="$missing $a"
+	done
+
+	if [ "$total" -eq 0 ]; then
+		echo "MISSING $name $file on $line: the release line has no directories at all" >&2
+		rc=1
+		continue
+	fi
+	[ -n "$missing" ] || continue
+
+	# One line per package per release line, not one per architecture: a package
+	# that failed to fetch is absent from all of them, and thirty-six identical
+	# lines bury whatever else went wrong.
+	# shellcheck disable=SC2086
+	set -- $missing
+	echo "MISSING $name $file on $line: absent from $# of $total architecture(s) (e.g. $1)" >&2
+	rc=1
+done < "$STAGED"
+
+[ "$rc" -eq 0 ] && echo "every fetched package reached the tree"
 exit "$rc"
