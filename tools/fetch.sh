@@ -60,9 +60,15 @@ download() {
 # built feed against it rather than re-deriving each package's shape. A fetch that
 # half-succeeds is otherwise invisible: `owfeed doctor` reads what is there and
 # cannot see what is missing.
+#
+# Not a dotfile, and that is not cosmetic. This was `.staged` for one commit, and it
+# never crossed the boundary between the job that fetches and the job that signs:
+# actions/upload-artifact excludes hidden files by default, the same way
+# actions/upload-pages-artifact does. A name without a leading dot works whether or
+# not someone remembered the flag.
 staged() {
 	mkdir -p "$DIST"
-	printf '%s %s %s\n' "$1" "$2" "$3" >> "$DIST/.staged"
+	printf '%s %s %s\n' "$1" "$2" "$3" >> "$DIST/staged.txt"
 }
 
 # check_signature <local file> [remote asset name]

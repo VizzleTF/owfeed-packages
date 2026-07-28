@@ -10,7 +10,7 @@
 # release line passes every other check and publishes an incomplete feed, and the
 # first report comes from a user whose `apk update` stopped offering an upgrade.
 #
-# tools/fetch.sh records each file it stages in dist/.staged, so this compares the
+# tools/fetch.sh records each file it stages in dist/staged.txt, so this compares the
 # built tree against what was actually fetched rather than re-deriving each package's
 # shape. Re-deriving is how the check and the thing it checks drift apart.
 #
@@ -19,7 +19,7 @@ set -eu
 
 OUT="${1:-out}"
 DIST="${DIST:-dist}"
-STAGED="$DIST/.staged"
+STAGED="$DIST/staged.txt"
 rc=0
 
 [ -f "$STAGED" ] || { echo "$STAGED is missing; run tools/fetch.sh first" >&2; exit 1; }
