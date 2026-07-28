@@ -16,7 +16,7 @@ Operating the feed. For adding or updating a package, see [CONTRIBUTING.md](CONT
 The split on `main` is the point: the fetch scripts execute values contributed by pull requests, and
 that job has no key. The key appears only after the built bytes are already in an artifact.
 
-**How owfeed gets here.** `VizzleTF/owfeed/setup@v0.1.3`, pinned to a release. The action downloads
+**How owfeed gets here.** `VizzleTF/owfeed/setup@v0.1.5`, pinned to a release. The action downloads
 one binary and checks it against the build attestation from owfeed's own release workflow before
 running it — not against a checksum from the same release, which whoever replaced the binary could
 replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
