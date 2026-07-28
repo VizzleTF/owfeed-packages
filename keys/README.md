@@ -17,8 +17,22 @@ that is not the release you are about to trust it for.
 | `vizzletf-release.pub` | `18c63865e2bcf8d6` | `luci-theme-footstrap`, `luci-app-footstrap-updater` |
 | `podkop-updater.pub` | `37ddece4c0eef357` | `podkop-updater` |
 
-A key per upstream repository rather than one per person, which is why the same author appears
-twice. A signature says who wrote something and never what it is about, so one key across several
-repositories is how a manifest lifted from one of them verifies perfectly as another. `owfeed`
-checks the `repo` line in the manifest as well, which closes that on its own — the separate keys
-mean the question does not arise, and a compromise of one reaches nothing else.
+A key per upstream repository rather than one per person is what this feed wants, and the table
+above does not yet meet it: `vizzletf-release.pub` covers two repositories, because one release
+pipeline signs both.
+
+The reason to want it: a signature says who wrote something and never what it is about, so one key
+across several repositories is how a manifest lifted from one of them verifies perfectly as
+another. `owfeed` checks the `repo` line in the manifest as well, and that closes the hole on its
+own — which is why the shared key is tolerable rather than urgent. What separate keys would add is
+blast radius: a compromise of one would reach nothing else.
+
+Adding or changing a key is the diff `.github/CODEOWNERS` names. Auto-merge cannot reach it by
+construction rather than by a check: it is only ever requested on a pull request the hourly job
+itself opened, and that job writes one file — `packages/<name>/upstream.sh` — refusing even that
+when the diff moves anything but the version and its checksums. A key arrives in a pull request a
+person opened, and those are never auto-merged.
+
+The code-owner review is not enforced by a branch rule. That needs a reviewer who is not the
+author, and with a single maintainer it would block every key addition permanently rather than
+gate it. Turn it on when there is a second maintainer.
