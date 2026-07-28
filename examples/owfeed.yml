@@ -1,0 +1,33 @@
+# The owfeed.yml that lives in YOUR repository, next to your code.
+#
+# It builds and signs your package with your key. The community feed has its own,
+# which is what its subscribers install; yours travels inside the package as a
+# second signature.
+version: 1
+
+feed:
+  # Your own name, not the community feed's: this file describes your packages, and
+  # a feed you may or may not also publish yourself.
+  name: mytool
+  url: https://gitlab.com/someone/mytool
+  maintainer: "You <you@example.org>"
+
+signing:
+  key: env:OWFEED_SIGN_KEY        # a masked GitLab CI variable
+
+publish:
+  - target: github-pages          # unused when you only produce release assets
+
+packages:
+  - name: mytool
+    build: mkpkg
+    arch: [x86_64, aarch64_generic]
+    version-from: file:./dist/VERSION
+    files: ./dist/{arch}/root
+    description: "One line. LuCI truncates past 512 bytes."
+
+    # Required by the community feed's `doctor --require-origin`: the URL is carried
+    # into the index and shown by `apk info` on the router, so it is the one place a
+    # user can look to find out whose package they installed.
+    url: https://gitlab.com/someone/mytool
+    repo-commit: env:CI_COMMIT_SHA
