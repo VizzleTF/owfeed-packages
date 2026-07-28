@@ -98,6 +98,10 @@ Redistributing someone else's work needs more than a licence that allows it, and
 
 ## Adding a package
 
+Start with the [cookbook](https://owfeed.org/cookbook/) if you have not published a package
+before — it covers building and signing one, which is what has to happen before this feed can
+carry it. *([Русский](https://owfeed.org/cookbook/ru/))*
+
 A package here is a file of values — a version, its checksums, which key signs it. There is no
 per-package script.
 
