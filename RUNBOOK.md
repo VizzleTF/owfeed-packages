@@ -8,7 +8,7 @@ Operating the feed. For adding or updating a package, see [CONTRIBUTING.md](CONT
 
 | when | what | key present? |
 |---|---|---|
-| pull request | fetch → build → sign → index → doctor → smoke | a throwaway one |
+| pull request | fetch → build → sign → index → doctor → smoke (both lines) | throwaway ones |
 | push to `main` | job 1: fetch → build | **no** |
 | | job 2: sign → index → smoke → verify → publish → Pages | **yes**, behind `environment: feed` |
 | hourly | ask each upstream for its latest release; open a pull request if there is one | no |
@@ -82,10 +82,21 @@ owfeed smoke                  # installs the built feed on a real OpenWrt image
 
 ---
 
-## The signing key
+## The signing keys
 
-It lives in the `OWFEED_SIGN_KEY` secret and nowhere else in this repository. `.gitignore` covers
-`*.pem` so it cannot be committed by accident.
+There are two, because each package manager verifies only its own scheme:
+
+| secret | scheme | signs |
+|---|---|---|
+| `OWFEED_SIGN_KEY` | EC prime256v1 | the apk index, and every `.apk` |
+| `OWFEED_USIGN_KEY` | usign / ed25519 | the opkg index |
+
+Both live in repository secrets and nowhere else here. `.gitignore` covers `*.pem` and `*.sec` so
+neither can be committed by accident.
+
+The opkg key is published under its own id as a filename — that is how opkg looks it up. The apk key
+is published under the feed's name, because apk matches on the identity inside the signature and
+ignores the name.
 
 **There is no revocation.** apk has no CRL, no expiry, and no way to say a key is dead. If the key
 leaks, every subscriber has to install a new one by hand — there is no path that reaches a router

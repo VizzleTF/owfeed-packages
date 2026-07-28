@@ -8,10 +8,15 @@
 # maintainer never tested.
 KIND="apk"
 
+# Upstream publishes both containers, so this package serves both release lines:
+# 25.12 installs the .apk, 24.10 the .ipk. They are the same build.
+
 REPO="VizzleTF/luci-theme-footstrap"
 VERSION="0.11.6-r1"
 ARTIFACT="luci-theme-footstrap-0.11.6-r1.apk"
 SHA256="e2e7bde2aec9dd44863573c5ddcb17162295e31b177d0e7d45e4d2b79b804259"
+ARTIFACT_IPK="luci-theme-footstrap_0.11.6-r1_all.ipk"
+SHA256_IPK="3255edc13b67a56e315c933c8be7170d63a9669af8903786ccb08801d3fc9996"
 
 # The release is verified against this key before it is ingested, so the feed's
 # signature means the author signed it. The key id is pinned as well: the id inside

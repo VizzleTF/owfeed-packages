@@ -8,6 +8,21 @@ feed:
   maintainer: "VizzleTF <vizzletf47@gmail.com>"
   homepage: https://github.com/VizzleTF/owfeed-packages
 
+releases:
+  # 25.12 and later is apk; 24.10 and earlier is opkg. Routers stay on a release
+  # for years, so serving only the newer line would leave most of the installed
+  # base where it was.
+  - line: "25.12"
+    default: true
+    format: apk
+  - line: "24.10"
+    format: ipk
+
+signing:
+  # Two keys, because each package manager verifies only its own scheme: apk checks
+  # EC prime256v1, opkg checks usign.
+  usign-key: env:OWFEED_USIGN_KEY
+
 publish:
   - target: github-pages
 

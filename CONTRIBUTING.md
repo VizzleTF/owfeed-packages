@@ -75,11 +75,39 @@ A static binary needs the right build target and no OpenWrt SDK, so one upstream
 serves several OpenWrt architectures. Which ones is a judgement about what upstream's builds
 actually run on, which is why it lives beside the package and not inside a tool.
 
+### Which release lines
+
+This feed serves both: apk for 25.12 and later, opkg for 24.10 and earlier. Routers stay on a
+release for years, so shipping only the newer line leaves most of the installed base where it was.
+
+**Upstream publishes both containers.** Pin the second one too, and it serves both lines from the
+same build:
+
+```sh
+ARTIFACT="luci-theme-footstrap-0.11.6-r1.apk"
+SHA256="e2e7bde2…"
+ARTIFACT_IPK="luci-theme-footstrap_0.11.6-r1_all.ipk"
+SHA256_IPK="3255edc1…"
+```
+
+**owfeed builds it** (`KIND="binaries"`). Nothing to do: both formats come from the same staged
+payload.
+
+**It belongs on one line only.** Say so in `owfeed.yml`, and it is absent from the other line's
+index entirely rather than present and unresolvable:
+
+```yaml
+- name: luci-app-mine
+  releases: ["25.12"]
+```
+
 ### Then
 
 ```sh
 ./tools/fetch.sh packages/<name>
-owfeed build && owfeed sign && owfeed index && owfeed doctor && owfeed smoke
+owfeed build && owfeed sign && owfeed index && owfeed doctor --require-origin
+owfeed smoke                 # 25.12, on a real router
+owfeed smoke --release 24.10 # 24.10, on a real router
 ```
 
 Open a pull request. CI runs exactly that with a throwaway key, so nothing from a fork comes near
