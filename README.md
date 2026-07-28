@@ -107,3 +107,9 @@ per-package script.
   *([Русский](RUNBOOK_ru.md))*
 
 Pull requests run the whole pipeline with a throwaway key, so a fork never comes near the feed's own.
+
+This feed is one end of a longer lifecycle: [owlab](https://github.com/VizzleTF/owlab) is where a
+package is developed and proven to work, [owfeed](https://github.com/VizzleTF/owfeed) is where it is
+signed and indexed, and this repository decides whose keys it trusts and hands the result to routers.
+[ECOSYSTEM.md](https://github.com/VizzleTF/owfeed/blob/main/docs/ECOSYSTEM.md) is where the boundary
+between the three is written down — including why nothing is ever built here.

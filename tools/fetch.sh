@@ -131,6 +131,18 @@ manifest)
 	owfeed verify-artifact --key "$ROOT/$SIG_KEY" --key-id "$SIG_KEY_ID" \
 		--signature "$work/manifest.txt.sig" "$work/manifest.txt"
 
+	# Refuse a shape we do not know, by name, before reading a single field out of
+	# it. Other projects ship their own manifests with their own first line and six
+	# fields per package instead of seven -- parsed positionally that reads as a
+	# valid manifest with an empty architecture, and the failure surfaces much later
+	# as a download into "$DIST/" with no directory at all.
+	got_format="$(head -n1 "$work/manifest.txt")"
+	[ "$got_format" = "owfeed-manifest 1" ] || {
+		echo "$NAME: manifest says \"$got_format\"; this reads \"owfeed-manifest 1\"" >&2
+		echo "$NAME: it is written by \`owfeed release\` -- see docs/manifest-format.md in owfeed" >&2
+		exit 1
+	}
+
 	# A signature proves who wrote something, never what it is about. One key often
 	# signs several repositories, so without these two checks a manifest lifted from
 	# another of this author's releases would verify perfectly as this one.
@@ -138,6 +150,22 @@ manifest)
 	got_tag="$(awk '$1=="tag"{print $2; exit}' "$work/manifest.txt")"
 	[ "$got_repo" = "$REPO" ] || { echo "$NAME: manifest is for $got_repo, not $REPO" >&2; exit 1; }
 	[ "$got_tag" = "$TAG" ] || { echo "$NAME: manifest is for $got_tag, not $TAG" >&2; exit 1; }
+
+	# Seven fields, every line. The format identifier above says the shape should be
+	# right; this says this particular file is.
+	bad="$(awk '$1=="pkg" && NF!=7 {print NR; exit}' "$work/manifest.txt")"
+	if [ -n "$bad" ]; then
+		echo "$NAME: manifest line $bad does not have seven fields" >&2
+		echo "$NAME: expected: pkg <name> <format> <file> <size> <sha256> <arch>" >&2
+		exit 1
+	fi
+
+	# A manifest with no packages is not a release, and reading one as success would
+	# publish nothing while reporting that it worked.
+	[ "$(awk '$1=="pkg"' "$work/manifest.txt" | wc -l)" -gt 0 ] || {
+		echo "$NAME: manifest names no packages" >&2
+		exit 1
+	}
 
 	# pkg <name> <format> <file> <size> <sha256> <arch>
 	awk '$1=="pkg"{print $3, $4, $5, $6, $7}' "$work/manifest.txt" | while read -r fmt file size sum arch; do
