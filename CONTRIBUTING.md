@@ -210,6 +210,24 @@ Each finding says what it costs and what to do about it.
 
 ---
 
+## Somebody else's package
+
+Ask them first. Not because a licence necessarily forbids it — usually it does not — but because
+republishing someone's work routes their bug reports to them from an install path they never tested,
+and a message settles that faster than any reading of a licence.
+
+Then check three separate things, of which only the first is usually checked:
+
+- **The licence permits redistribution, and its conditions are met.** GPL asks for source
+  availability, not just attribution. Apache-2.0 asks for the NOTICE and a statement of changes.
+- **The trademark is a different right.** Open-source licences do not grant it. Some projects
+  publish a policy saying what is allowed; read it.
+- **There is a licence at all.** A repository with no `LICENSE` grants nothing, however public it
+  is, and declaring a permissive one in `upstream.sh` would be inventing permission.
+
+[LEGAL.md](LEGAL.md) works through what this feed already carries, including the two cases where
+the answer is not simply yes.
+
 ## Why a pin, and why a key
 
 **Everything downloaded is pinned by sha256 in this repository.** A checksum served by the same host

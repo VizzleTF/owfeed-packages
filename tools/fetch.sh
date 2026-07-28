@@ -17,7 +17,16 @@ STAGING="${STAGING:-staging}"
 
 . "$ROOT/$DIR/upstream.sh"
 
-TAG="v${VERSION%-r*}"
+# A package can be present and not published — see LEGAL.md for why one is.
+if [ "${ENABLED:-yes}" != "yes" ]; then
+	echo ">> $NAME: not enabled, skipping"
+	exit 0
+fi
+
+# Most projects tag releases v<version>; some do not. Overriding the whole tag
+# rather than the prefix means a project that tags "release-1.2" or "2026.07" is a
+# one-line entry rather than a change here.
+TAG="${TAG:-v${VERSION%-r*}}"
 base="https://github.com/${REPO}/releases/download/${TAG}"
 
 # download <url> <dest> <sha256>

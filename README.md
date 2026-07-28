@@ -84,6 +84,15 @@ Where an upstream publishes a detached signature beside its artifact, that is pr
 someone other than this feed, and the package may set `AUTO_MERGE="yes"` so the pull request merges
 itself once the checks pass. The checks still have to pass.
 
+## Whose packages these are
+
+Every package here declares its licence and its upstream, and both travel into the index and into
+`apk info` on the router — a user can always find out whose software they installed.
+
+Redistributing someone else's work needs more than a licence that allows it, and
+[LEGAL.md](LEGAL.md) is where this feed writes down what it read and what it decided.
+*([Русский](LEGAL_ru.md))*
+
 ## Adding a package
 
 A package here is a file of values — a version, its checksums, which key signs it. There is no

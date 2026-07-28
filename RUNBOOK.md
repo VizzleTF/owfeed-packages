@@ -18,6 +18,25 @@ that job has no key. The key appears only after the built bytes are already in a
 
 ---
 
+## When a package goes missing
+
+`tools/check-tree.sh` runs after `owfeed index` in both workflows and fails the run
+if a package this repository ingests is absent from a release line it declares.
+
+It exists because nothing else can see that. `owfeed doctor` reads the tree and asks
+whether what is there is correct — a package that failed to fetch is simply not
+there, and every check passes. That is how a tree carrying one of three packages on
+its 24.10 line once reported itself ready to publish.
+
+```
+MISSING luci-theme-footstrap 0.11.6-r1 on 24.10: absent from 36 of 36 architectures (e.g. armeb_xscale)
+```
+
+Absent from *all* architectures means the fetch produced nothing: the release has no
+such asset, or `ARTIFACT_IPK` is unset in `upstream.sh` for a package that used to
+publish one. Absent from *some* means the build ran short — read the build log for a
+step that failed without stopping the run.
+
 ## A pull request is red
 
 Read the finding. Each says what it costs and what to do. The ones with non-obvious causes:
