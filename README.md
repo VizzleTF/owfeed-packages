@@ -33,6 +33,9 @@ apk update && apk add podkop-updater
 | `luci-theme-footstrap` | LuCI theme | [VizzleTF/luci-theme-footstrap](https://github.com/VizzleTF/luci-theme-footstrap) |
 | `podkop-updater` | watches podkop releases, drives update and rollback from Telegram | [VizzleTF/podkop_autoupdater](https://github.com/VizzleTF/podkop_autoupdater) |
 
+What the feed actually carries, per architecture, is in its index:
+[`index.json`](https://vizzletf.github.io/owfeed-packages/releases/25.12/x86_64/index.json).
+
 ## Before you install the key
 
 Putting a key in `/etc/apk/keys` trusts it for **every package name**, not only the two above. A feed
