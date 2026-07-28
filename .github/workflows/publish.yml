@@ -31,13 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: VizzleTF/owfeed/setup@v0.1.2
         with:
-          go-version: '1.25'
-# owfeed is pinned by commit, not tracked at @main. This repository signs what it
-      # publishes; the tool that does the signing should move when someone changes
-      # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@ab9ac26e10d4e67527a0d3690b64802c0281f6e3
+          version: v0.1.2
 
       - name: Fetch upstream artifacts
         run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
@@ -60,15 +56,14 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      # deploy-pages resolves the artifact by id through the Actions API from v4, and
+      # a permissions block sets every scope it does not name to none.
+      actions: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: VizzleTF/owfeed/setup@v0.1.2
         with:
-          go-version: '1.25'
-# owfeed is pinned by commit, not tracked at @main. This repository signs what it
-      # publishes; the tool that does the signing should move when someone changes
-      # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@ab9ac26e10d4e67527a0d3690b64802c0281f6e3
+          version: v0.1.2
 
       - uses: actions/download-artifact@v4
         with:
@@ -92,7 +87,13 @@ jobs:
           owfeed verify out || true
           owfeed publish
 
-      - uses: actions/upload-pages-artifact@v3
+      # include-hidden-files: from v4 this action excludes dotfiles, and `.nojekyll`
+      # is a dotfile. Without it Pages runs Jekyll over a tree of binaries and drops
+      # every path beginning with a dot or an underscore -- from a tree that was
+      # correct when owfeed checked it. `owfeed verify` reports OWF514 when the live
+      # site has lost it.
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: out
-      - uses: actions/deploy-pages@v4
+          include-hidden-files: true
+      - uses: actions/deploy-pages@v5

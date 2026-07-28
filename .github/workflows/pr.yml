@@ -25,14 +25,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      # owfeed is pinned to a release, not tracked at @main. This repository signs
+      # what it publishes; the tool that does the signing should move when someone
+      # changes this line, not whenever an unrelated repository is pushed to.
+      #
+      # The action verifies the binary against the attestation from owfeed's release
+      # workflow before running it, which `go install` does not do -- it trusts
+      # whatever the module proxy hands back for that revision.
+      - uses: VizzleTF/owfeed/setup@v0.1.2
         with:
-          go-version: '1.25'
-
-# owfeed is pinned by commit, not tracked at @main. This repository signs what it
-      # publishes; the tool that does the signing should move when someone changes
-      # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@ab9ac26e10d4e67527a0d3690b64802c0281f6e3
+          version: v0.1.2
 
       - name: Fetch upstream artifacts
         run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
