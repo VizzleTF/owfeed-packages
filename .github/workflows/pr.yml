@@ -32,7 +32,7 @@ jobs:
 # owfeed is pinned by commit, not tracked at @main. This repository signs what it
       # publishes; the tool that does the signing should move when someone changes
       # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@f98d4059549a663f2a70adb9c00b340f1762bca0
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@c744502bfc6889da0ccadc6a77737f2e115e609c
 
       - name: Fetch upstream artifacts
         run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
@@ -44,7 +44,9 @@ jobs:
       - name: Build and check with a throwaway key
         run: |
           owfeed keygen -o "$RUNNER_TEMP/throwaway.pem"
+          owfeed keygen --usign -o "$RUNNER_TEMP/throwaway.sec"
           export OWFEED_SIGN_KEY="$(cat "$RUNNER_TEMP/throwaway.pem")"
+          export OWFEED_USIGN_KEY="$(cat "$RUNNER_TEMP/throwaway.sec")"
           owfeed --frozen-lock build
           owfeed sign
           owfeed index
@@ -53,4 +55,5 @@ jobs:
           # install the feed on a real OpenWrt image, following the published
           # snippet, and prove `apk add` needs no --allow-untrusted.
           owfeed smoke
-          shred -u "$RUNNER_TEMP/throwaway.pem"
+          owfeed smoke --release 24.10
+          shred -u "$RUNNER_TEMP/throwaway.pem" "$RUNNER_TEMP/throwaway.sec"

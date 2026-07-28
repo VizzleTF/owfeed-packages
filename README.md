@@ -1,10 +1,13 @@
 # owfeed community packages
 
-An OpenWrt 25.12+ apk feed, built and published by [owfeed](https://github.com/VizzleTF/owfeed).
+An OpenWrt package feed for **both release lines** — apk for 25.12 and later, opkg for 24.10 and
+earlier — built and published by [owfeed](https://github.com/VizzleTF/owfeed).
 
-## Installing owfeed community packages
+## Install
 
-OpenWrt 25.12 and later, any architecture.
+Which set you run depends on your release: 25.12 and later is apk, 24.10 and earlier is opkg.
+
+### OpenWrt 25.12 and later
 
 ```sh
 # HTTPS on a stock image needs these two first.
@@ -19,29 +22,35 @@ printf '%s\n' /etc/apk/keys/owfeed-packages.pem /etc/apk/repositories.d/owfeed-p
 apk update && apk add podkop-updater
 ```
 
-> **Do not install the .apk file directly.** `apk add ./podkop-updater-*.apk` writes a pin on the package's content hash into `/etc/apk/world`, and that file survives sysupgrade. The package would then never be upgraded from this feed again. Add the repository and install by name.
+### OpenWrt 24.10 and earlier
 
-> **Attended Sysupgrade will not carry these packages across.** `owut` forwards no custom repositories, and the sysupgrade server's `repository_allow_list` is empty by default, which denies everything. Either exclude these packages from the `owut` run and reinstall them afterwards, or use an ordinary `sysupgrade` with the `/etc/sysupgrade.conf` lines above.
+```sh
+# The key file's NAME is its id — opkg looks it up by that.
+wget https://vizzletf.github.io/owfeed-packages/9040356b214084da -O /etc/opkg/keys/9040356b214084da
 
-> **Installing the key trusts this feed for every package name.** A key in `/etc/apk/keys` validates an index claiming any package name at all, so this feed could offer a higher version of a base package and win. Install it because you trust whoever publishes it, not because a page told you to.
+echo "src/gz owfeed-packages https://vizzletf.github.io/owfeed-packages/releases/24.10/$(. /etc/openwrt_release; echo $DISTRIB_ARCH)" >> /etc/opkg/customfeeds.conf
 
+opkg update && opkg install podkop-updater
+```
 
-## What is in it
+> **Do not install the package file directly.** On 25.12 `apk add ./file.apk` writes a pin on the
+> package's content hash into `/etc/apk/world`, and that file survives sysupgrade — the package
+> would never upgrade from this feed again. Add the repository and install by name.
 
-| package | what it is | upstream |
-|---|---|---|
-| `luci-theme-footstrap` | LuCI theme | [VizzleTF/luci-theme-footstrap](https://github.com/VizzleTF/luci-theme-footstrap) |
-| `luci-app-footstrap-updater` | in-LuCI updater for the theme | [VizzleTF/luci-app-footstrap-updater](https://github.com/VizzleTF/luci-app-footstrap-updater) |
-| `podkop-updater` | watches podkop releases, drives update and rollback from Telegram | [VizzleTF/podkop_autoupdater](https://github.com/VizzleTF/podkop_autoupdater) |
+> **Attended Sysupgrade will not carry these packages across.** `owut` forwards no custom
+> repositories, and the sysupgrade server's `repository_allow_list` is empty by default, which
+> denies everything.
 
-What the feed actually carries, per architecture, is in its index:
-[`index.json`](https://vizzletf.github.io/owfeed-packages/releases/25.12/x86_64/index.json).
+> **Installing the key trusts this feed for every package name.** It validates an index claiming any
+> name at all, so this feed could offer a higher version of a base package and win. Install it
+> because you trust who publishes it.
 
 ## What this feed's signature means
 
-Everything here — the index and every package — is signed with this feed's key. It has to be: apk
-takes its trust from the signed index, and only this feed can sign an index describing everything
-this feed carries. Signing packages with their authors' keys instead would mean installing every
+Everything here is signed with this feed's keys — two of them, because each package manager verifies
+only its own scheme: apk checks EC prime256v1, opkg checks usign. It has to be this feed's key and
+not the authors': trust flows from the signed index, and only this feed can sign an index describing
+everything this feed carries. Signing packages with their authors' keys instead would mean installing every
 author's key on your router, and each one would be a trust anchor for *every* package name, not just
 theirs.
 

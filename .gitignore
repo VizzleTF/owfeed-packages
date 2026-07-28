@@ -8,3 +8,6 @@ out/
 staging/
 owfeed
 .shim/
+
+# The opkg signing key is a secret too.
+*.sec

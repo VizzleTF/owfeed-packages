@@ -37,7 +37,7 @@ jobs:
 # owfeed is pinned by commit, not tracked at @main. This repository signs what it
       # publishes; the tool that does the signing should move when someone changes
       # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@f98d4059549a663f2a70adb9c00b340f1762bca0
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@c744502bfc6889da0ccadc6a77737f2e115e609c
 
       - name: Fetch upstream artifacts
         run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
@@ -68,7 +68,7 @@ jobs:
 # owfeed is pinned by commit, not tracked at @main. This repository signs what it
       # publishes; the tool that does the signing should move when someone changes
       # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@f98d4059549a663f2a70adb9c00b340f1762bca0
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@c744502bfc6889da0ccadc6a77737f2e115e609c
 
       - uses: actions/download-artifact@v4
         with:
@@ -78,10 +78,13 @@ jobs:
       - name: Sign, index and check
         env:
           OWFEED_SIGN_KEY: ${{ secrets.OWFEED_SIGN_KEY }}
+          # opkg verifies usign, apk verifies EC. A feed serving both lines needs both.
+          OWFEED_USIGN_KEY: ${{ secrets.OWFEED_USIGN_KEY }}
         run: |
           owfeed sign
           owfeed index
           owfeed smoke
+          owfeed smoke --release 24.10
           # Compare what is about to go out against what is already live, before it
           # replaces it. A version republished with different contents is invisible
           # from inside the tree, which is self-consistent either way.

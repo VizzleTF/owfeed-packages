@@ -47,12 +47,23 @@ case "${KIND:?upstream.sh must set KIND}" in
 apk)
 	# Upstream publishes a finished package. Its own CI built it; rebuilding here
 	# would ship something the maintainer never tested. It goes where owfeed puts a
-	# noarch build and is signed and indexed unchanged.
+	# build of that architecture and is signed and indexed unchanged.
 	dest="$DIST/noarch"
 	mkdir -p "$dest"
-	echo ">> $NAME $VERSION"
+	echo ">> $NAME $VERSION (25.12)"
 	download "$base/$ARTIFACT" "$dest/$ARTIFACT" "$SHA256"
 	check_signature "$dest/$ARTIFACT"
+
+	# The 24.10 container, when upstream builds one. opkg calls the
+	# architecture-independent package "all" where apk calls it noarch, so it goes
+	# in the directory named for what it says it is.
+	if [ -n "${ARTIFACT_IPK:-}" ]; then
+		dest="$DIST/all"
+		mkdir -p "$dest"
+		echo ">> $NAME $VERSION (24.10)"
+		download "$base/$ARTIFACT_IPK" "$dest/$ARTIFACT_IPK" "$SHA256_IPK"
+		check_signature "$dest/$ARTIFACT_IPK"
+	fi
 	;;
 
 binaries)
