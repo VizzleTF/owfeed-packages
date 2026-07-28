@@ -37,10 +37,24 @@ apk update && apk add podkop-updater
 What the feed actually carries, per architecture, is in its index:
 [`index.json`](https://vizzletf.github.io/owfeed-packages/releases/25.12/x86_64/index.json).
 
+## What this feed's signature means
+
+Everything here — the index and every package — is signed with this feed's key. It has to be: apk
+takes its trust from the signed index, and only this feed can sign an index describing everything
+this feed carries. Signing packages with their authors' keys instead would mean installing every
+author's key on your router, and each one would be a trust anchor for *every* package name, not just
+theirs.
+
+So the question is what this feed checked before it signed. For the two footstrap packages, the
+author's detached signature is verified against a key pinned in [`keys/`](keys/) before the package
+is ingested — the feed's signature means *the author signed this*. `podkop-updater` upstream
+publishes checksums and no signature, so there the feed attests only that the bytes match a pin a
+person recorded, and its updates wait for a person.
+
 ## Before you install the key
 
-Putting a key in `/etc/apk/keys` trusts it for **every package name**, not only the two above. A feed
-whose key is compromised can offer a higher version of `dropbear` or `base-files` and win the
+Putting a key in `/etc/apk/keys` trusts it for **every package name**, not only the ones above. A
+feed whose key is compromised can offer a higher version of `dropbear` or `base-files` and win the
 resolution, and apk has no revocation — no CRL, no expiry, no way to say a key is dead.
 
 Install it because you trust who publishes it, not because a page told you to.

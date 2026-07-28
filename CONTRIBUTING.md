@@ -18,6 +18,12 @@ so the diff a reviewer sees is a version and its checksums.
 release is not a verification of it — whoever can replace one can replace the other. A pin recorded
 in this repository is.
 
+**Where the author signs their releases, that signature is checked too.** Set `SIG_KEY` and
+`SIG_KEY_ID` in `upstream.sh`, pin the key under [`keys/`](keys/), and `fetch.sh` runs
+`owfeed verify-artifact` before the package enters the feed. A pin proves the bytes have not changed
+since someone looked at them; a signature says who produced them. Only the second one can justify an
+update merging itself.
+
 ## Two shapes
 
 **A. The upstream already publishes a built `.apk`.** Take it as it is. Its own CI compiled whatever
