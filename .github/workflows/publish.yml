@@ -8,6 +8,18 @@ on:
 permissions:
   contents: read
 
+env:
+  # A package's identity is a hash over its payload, and mkpkg records mtimes. Without
+  # a fixed epoch every rebuild produces a new identity for byte-identical content, so
+  # each republication ships packages that claim to be new, invalidating every cached
+  # copy and making `owfeed verify` report tampering that did not happen.
+  #
+  # A constant, not a timestamp: identity should depend on what a package contains and
+  # on nothing else. Content changes only when a pin changes, and a pin change comes
+  # with a version bump.
+  SOURCE_DATE_EPOCH: '1700000000'
+
+
 concurrency:
   group: owfeed-publish
   cancel-in-progress: false
@@ -25,7 +37,7 @@ jobs:
 # owfeed is pinned by commit, not tracked at @main. This repository signs what it
       # publishes; the tool that does the signing should move when someone changes
       # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@7d977850212ed28d3d0a87bc35a297d45dfafd24
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@68eb1550db36db1798082771d4466ed3b868927a
 
       - name: Fetch upstream artifacts
         run: for f in packages/*/fetch.sh; do "$f"; done
@@ -56,7 +68,7 @@ jobs:
 # owfeed is pinned by commit, not tracked at @main. This repository signs what it
       # publishes; the tool that does the signing should move when someone changes
       # this line, not whenever an unrelated repository is pushed to.
-      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@7d977850212ed28d3d0a87bc35a297d45dfafd24
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@68eb1550db36db1798082771d4466ed3b868927a
 
       - uses: actions/download-artifact@v4
         with:
@@ -70,6 +82,10 @@ jobs:
           owfeed sign
           owfeed index
           owfeed smoke
+          # Compare what is about to go out against what is already live, before it
+          # replaces it. A version republished with different contents is invisible
+          # from inside the tree, which is self-consistent either way.
+          owfeed verify out || true
           owfeed publish
 
       - uses: actions/upload-pages-artifact@v3
