@@ -22,7 +22,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      - run: go install github.com/VizzleTF/owfeed/cmd/owfeed@main
+# owfeed is pinned by commit, not tracked at @main. This repository signs what it
+      # publishes; the tool that does the signing should move when someone changes
+      # this line, not whenever an unrelated repository is pushed to.
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@d0abde84dab45147203925918257e06cb2cea028
 
       - name: Fetch upstream artifacts
         run: for f in packages/*/fetch.sh; do "$f"; done
@@ -50,7 +53,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      - run: go install github.com/VizzleTF/owfeed/cmd/owfeed@main
+# owfeed is pinned by commit, not tracked at @main. This repository signs what it
+      # publishes; the tool that does the signing should move when someone changes
+      # this line, not whenever an unrelated repository is pushed to.
+      - run: GOPROXY=direct go install github.com/VizzleTF/owfeed/cmd/owfeed@d0abde84dab45147203925918257e06cb2cea028
 
       - uses: actions/download-artifact@v4
         with:
