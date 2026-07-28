@@ -63,6 +63,7 @@ jobs:
         run: |
           owfeed sign
           owfeed index
+          owfeed smoke
           owfeed publish
 
       - uses: actions/upload-pages-artifact@v3

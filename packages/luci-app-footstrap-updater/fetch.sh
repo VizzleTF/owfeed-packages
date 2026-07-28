@@ -1,10 +1,8 @@
 #!/bin/sh
-# Take luci-theme-footstrap's released package as it is.
+# Take luci-app-footstrap-updater's released package as it is.
 #
-# Upstream's own CI builds this through the OpenWrt SDK, which compiles its CSS and
-# its translation catalogues. Rebuilding it here would produce something the
-# maintainer never tested, so the feed distributes exactly what they published and
-# adds only its own signature.
+# Upstream's own CI builds it through the OpenWrt SDK. The feed distributes exactly
+# what they published and adds only its own signature.
 set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/upstream.sh"

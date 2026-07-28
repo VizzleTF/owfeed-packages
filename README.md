@@ -31,6 +31,7 @@ apk update && apk add podkop-updater
 | package | what it is | upstream |
 |---|---|---|
 | `luci-theme-footstrap` | LuCI theme | [VizzleTF/luci-theme-footstrap](https://github.com/VizzleTF/luci-theme-footstrap) |
+| `luci-app-footstrap-updater` | in-LuCI updater for the theme | [VizzleTF/luci-app-footstrap-updater](https://github.com/VizzleTF/luci-app-footstrap-updater) |
 | `podkop-updater` | watches podkop releases, drives update and rollback from Telegram | [VizzleTF/podkop_autoupdater](https://github.com/VizzleTF/podkop_autoupdater) |
 
 What the feed actually carries, per architecture, is in its index:
@@ -43,6 +44,22 @@ whose key is compromised can offer a higher version of `dropbear` or `base-files
 resolution, and apk has no revocation — no CRL, no expiry, no way to say a key is dead.
 
 Install it because you trust who publishes it, not because a page told you to.
+
+## Staying current
+
+An hourly job asks each upstream for its latest release. When one appears it opens a pull request
+containing a version and its checksums, recomputed from the bytes the release actually served — and
+nothing else. CI then builds the feed, indexes it, checks it and installs it on a real OpenWrt image
+before it can be merged.
+
+It proposes; it does not publish. A job that fetched whatever an upstream pushed in the last hour
+and signed it with this feed's key would be handing that key's authority to every upstream, and
+would make the checksum pins decoration: recomputed from whatever arrived, they would attest to
+nothing.
+
+Where an upstream publishes a detached signature beside its artifact, that is provenance from
+someone other than this feed, and the package may set `AUTO_MERGE="yes"` so the pull request merges
+itself once the checks pass. The checks still have to pass.
 
 ## Adding a package
 

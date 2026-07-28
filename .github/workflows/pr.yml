@@ -34,4 +34,8 @@ jobs:
           owfeed sign
           owfeed index
           owfeed doctor
+          # The last gate, and the only one that asks apk rather than telling it:
+          # install the feed on a real OpenWrt image, following the published
+          # snippet, and prove `apk add` needs no --allow-untrusted.
+          owfeed smoke
           shred -u "$RUNNER_TEMP/throwaway.pem"
