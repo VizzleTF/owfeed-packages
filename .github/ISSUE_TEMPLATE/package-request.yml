@@ -1,0 +1,144 @@
+name: Request package publication
+description: Ask this feed to carry a package you publish.
+title: "package: <name>"
+labels: ["package-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This feed does not build anything. It ingests packages their authors already
+        built and signed, verifies them against a key pinned here, and re-signs them
+        with the feed's own key so routers can verify one thing instead of many.
+
+        That means two things about this request. Your release has to be something a
+        machine can check without asking you — see
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md). And adding your key is a
+        decision a person makes once, by hand, because a key in this feed is trusted
+        for everything it signs from then on.
+
+        Before filling this in, read [LEGAL.md](../blob/main/LEGAL.md). A package has
+        been refused here over source availability and another over a trademark, and
+        both were found late. It is cheaper for everyone to find it now.
+
+  - type: input
+    id: repo
+    attributes:
+      label: Repository
+      description: Where the package is published, as owner/name.
+      placeholder: someone/luci-app-example
+    validations:
+      required: true
+
+  - type: input
+    id: tag
+    attributes:
+      label: Release tag to check
+      description: An existing release. The intake job fetches this one.
+      placeholder: v1.2.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What the release publishes
+      description: >-
+        This decides how much of an update can land without a person reading it,
+        and it follows from what your signature covers — not from how much work
+        went into publishing.
+      options:
+        - "manifest — packages plus a signed manifest.txt (owfeed release)"
+        - "apk — finished .apk/.ipk, each with a detached .sig"
+        - "binaries — raw binaries, unsigned (this feed would package them)"
+    validations:
+      required: true
+
+  - type: input
+    id: manifest-url
+    attributes:
+      label: Manifest URL
+      description: >-
+        Required for the manifest shape. The intake job downloads this and its
+        .sig, and verifies one against the other before reading either.
+      placeholder: https://github.com/someone/luci-app-example/releases/latest/download/manifest.txt
+
+  - type: textarea
+    id: pubkey
+    attributes:
+      label: usign public key
+      description: >-
+        The whole file, both lines. This is not yet trust — the job uses it only to
+        check that your release is internally coherent. Trust happens later, when a
+        person commits it to keys/.
+      render: text
+      placeholder: |
+        untrusted comment: example release key
+        RWQ...
+    validations:
+      required: true
+
+  - type: input
+    id: key-id
+    attributes:
+      label: Key id
+      description: 16 hex characters. Pinned separately from the key itself.
+      placeholder: 18c63865e2bcf8d6
+    validations:
+      required: true
+
+  - type: input
+    id: arches
+    attributes:
+      label: Architectures
+      description: Space-separated, or "noarch" for a package carrying no compiled code.
+      placeholder: noarch
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: lines
+    attributes:
+      label: Release lines
+      options:
+        - label: "25.12 and later (apk)"
+        - label: "24.10 and earlier (opkg/ipk)"
+
+  - type: input
+    id: licence
+    attributes:
+      label: Licence
+      description: An SPDX identifier.
+      placeholder: Apache-2.0
+    validations:
+      required: true
+
+  - type: input
+    id: sources
+    attributes:
+      label: Where the sources are
+      description: >-
+        Required by a copyleft licence, and worth stating either way. A binary this
+        feed redistributes under GPL obliges this feed to be able to point at them.
+      placeholder: https://github.com/someone/luci-app-example
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: legal
+    attributes:
+      label: Before this is carried
+      options:
+        - label: I have read LEGAL.md.
+          required: true
+        - label: >-
+            The licence permits redistribution of the built artifacts, and the
+            sources are available as it requires.
+          required: true
+        - label: >-
+            The package name and its contents infringe no trademark, and it is not
+            presented as an official build of a project it is not part of.
+          required: true
+        - label: >-
+            I understand this feed re-signs what it ingests with its own key, and
+            that my signature travels inside the package unchanged.
+          required: true

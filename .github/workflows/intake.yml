@@ -1,0 +1,53 @@
+name: Intake
+
+# Read a package request and answer it, before a person spends time on it.
+#
+# NO SECRETS IN THIS WORKFLOW, and that is structural rather than tidy. It runs on
+# `issues`, which anybody can open, and it fetches and inspects a URL that the issue
+# body chose. A signing key in scope here would be a key any stranger can aim work
+# at. The checks it runs need no key: verifying a manifest uses a public half, and
+# the public half comes out of the issue itself.
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: intake-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    if: contains(github.event.issue.labels.*.name, 'package-request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: VizzleTF/owfeed/setup@v0.1.4
+        with:
+          version: v0.1.4
+
+      - name: Read the request and answer it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Via a file, never interpolated into the script: an issue body is
+          # attacker-controlled text and `${{ }}` would paste it into the shell.
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          set -eu
+          printf '%s' "$BODY" > "$RUNNER_TEMP/body.md"
+          ./tools/intake-check.sh "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/verdict.md" || {
+            {
+              echo "## Automated intake check"
+              echo
+              echo "The check itself failed to run. That is a bug here, not in your request."
+            } > "$RUNNER_TEMP/verdict.md"
+          }
+          cat "$RUNNER_TEMP/verdict.md"
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file "$RUNNER_TEMP/verdict.md"
