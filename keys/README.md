@@ -15,3 +15,10 @@ that is not the release you are about to trust it for.
 | key | id | covers |
 |---|---|---|
 | `vizzletf-release.pub` | `18c63865e2bcf8d6` | `luci-theme-footstrap`, `luci-app-footstrap-updater` |
+| `podkop-updater.pub` | `37ddece4c0eef357` | `podkop-updater` |
+
+A key per upstream repository rather than one per person, which is why the same author appears
+twice. A signature says who wrote something and never what it is about, so one key across several
+repositories is how a manifest lifted from one of them verifies perfectly as another. `owfeed`
+checks the `repo` line in the manifest as well, which closes that on its own — the separate keys
+mean the question does not arise, and a compromise of one reaches nothing else.

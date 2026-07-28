@@ -30,3 +30,15 @@ podkop_updater-mipsle 6cb925ec66ff6ff7b39aff5b09d3d60a95e6c0e2ffd8245364590fc444
 # served by the same host as the artifact is not provenance, so updates here wait
 # for a person.
 AUTO_MERGE="no"
+
+# Pending: upstream now builds and signs its own packages.
+#
+# VizzleTF/podkop_autoupdater has moved onto owfeed and its next release will carry
+# apk and ipk packages plus a usign-signed manifest, under key 37ddece4c0eef357 --
+# already pinned at keys/podkop-updater.pub. When that release exists this entry
+# stops being KIND="binaries" and starts carrying what upstream published, and
+# AUTO_MERGE can become "yes": the provenance will come from somewhere other than
+# this feed.
+#
+# Until then this stays as it is. Switching first would mean fetching assets that
+# are not there yet.
