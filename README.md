@@ -117,3 +117,4 @@ package is developed and proven to work, [owfeed](https://github.com/VizzleTF/ow
 signed and indexed, and this repository decides whose keys it trusts and hands the result to routers.
 [ECOSYSTEM.md](https://github.com/VizzleTF/owfeed/blob/main/docs/ECOSYSTEM.md) is where the boundary
 between the three is written down — including why nothing is ever built here.
+[STATUS.md](STATUS.md) says how much of this feed's side of it exists, and what is still open.

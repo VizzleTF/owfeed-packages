@@ -1,5 +1,20 @@
 name: Publish
 
+# These two jobs are the shape owfeed ships as a reusable workflow, written out by
+# hand. That duplication is deliberate and it is not free, so the reason is here
+# rather than in a commit message nobody re-reads.
+#
+# `VizzleTF/owfeed/.github/workflows/feed.yml` takes the signing keys as
+# `workflow_call` secrets, which means the calling workflow has to read them first,
+# and a calling job has no environment. Adopting it would move OWFEED_SIGN_KEY and
+# OWFEED_USIGN_KEY out of the `feed` environment and into repository scope, where the
+# hourly update job and every pull-request check could reach them. The environment
+# would still gate approval; it would no longer scope the secret.
+#
+# The keys stay where they are. This file goes away the release after `feed.yml`
+# reads the environment secret by name in its own publish job -- see owfeed's
+# docs/STATUS.md.
+
 on:
   push:
     branches: [main]
