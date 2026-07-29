@@ -13,8 +13,8 @@
 KIND="manifest"
 
 REPO="VizzleTF/podkop_autoupdater"
-VERSION="0.3.5-r1"
-TAG="v0.3.5"
+VERSION="0.3.6-r1"
+TAG="v0.3.6"
 
 # Verified before anything in the manifest is read, because every value in there
 # steers a download. The key id is pinned as well: the id inside a signature only
