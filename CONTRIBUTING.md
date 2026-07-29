@@ -218,6 +218,21 @@ owfeed smoke --release 24.10 # 24.10, on a real router
 Open a pull request. CI runs exactly that with a throwaway key, so nothing from a fork comes near
 the feed's own.
 
+### Show it in your README
+
+Once the package is in the feed, two badges are published for it and update themselves
+whenever the feed does. They are rendered from the index that was just built, so they cannot
+claim a version the feed is not serving.
+
+```markdown
+[![owfeed](https://img.shields.io/endpoint?url=https://repo.owfeed.org/badge/<name>.json)](https://owfeed.org/install/)
+[![owfeed](https://img.shields.io/endpoint?url=https://repo.owfeed.org/badge/<name>-releases.json)](https://owfeed.org/install/)
+```
+
+The first shows the version this feed serves; the second, the release lines it serves it on.
+Replace `<name>` with your package name.
+
+
 ---
 
 ## I want to update a package

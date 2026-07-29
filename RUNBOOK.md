@@ -22,14 +22,14 @@ the difference being throwaway keys, no environment and no deploy. `publish.yml`
 by hand, for the reason at the top of it; the comment there says what has to be true before it moves
 too.
 
-**How owfeed gets here.** `owfeed/owfeed/setup@v0.2.1`, pinned to a release. The action downloads
+**How owfeed gets here.** `owfeed/owfeed/setup@v0.3.1`, pinned to a release. The action downloads
 one binary and checks it against the build attestation from owfeed's own release workflow before
 running it — not against a checksum from the same release, which whoever replaced the binary could
 replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
 nothing: `go install` trusts whatever the module proxy returns for that revision.
 
-Moving to a new owfeed release is two lines in `pr.yml`, three in `publish.yml` and one in
-`intake.yml`, and it should be a pull request like anything else. The tool that signs this feed should move when someone changes a
+Moving to a new owfeed release is two lines in `pr.yml`, two in `publish.yml` and two in
+`intake.yml` — `grep -rn 'v0\.' .github/workflows` is the check, rather than counting from memory, and it should be a pull request like anything else. The tool that signs this feed should move when someone changes a
 line, not whenever an unrelated repository is pushed to.
 
 **Two things about the Pages deploy that are easy to break.** `actions/upload-pages-artifact` needs
