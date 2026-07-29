@@ -19,7 +19,7 @@ echo "https://repo.owfeed.org/releases/25.12/$(cat /etc/apk/arch)/packages.adb" 
 # Neither of those two files survives a sysupgrade on its own.
 printf '%s\n' /etc/apk/keys/owfeed-packages.pem /etc/apk/repositories.d/owfeed-packages.list >> /etc/sysupgrade.conf
 
-apk update && apk add podkop-updater
+apk update && apk add luci-theme-footstrap
 ```
 
 ### OpenWrt 24.10 and earlier
@@ -30,7 +30,7 @@ wget https://repo.owfeed.org/9040356b214084da -O /etc/opkg/keys/9040356b214084da
 
 echo "src/gz owfeed-packages https://repo.owfeed.org/releases/24.10/$(. /etc/openwrt_release; echo $DISTRIB_ARCH)" >> /etc/opkg/customfeeds.conf
 
-opkg update && opkg install podkop-updater
+opkg update && opkg install luci-theme-footstrap
 ```
 
 > **Do not install the package file directly.** On 25.12 `apk add ./file.apk` writes a pin on the
@@ -47,21 +47,80 @@ opkg update && opkg install podkop-updater
 
 ## What this feed's signature means
 
-Everything here is signed with this feed's keys — two of them, because each package manager verifies
-only its own scheme: apk checks EC prime256v1, opkg checks usign. It has to be this feed's key and
-not the authors': trust flows from the signed index, and only this feed can sign an index describing
-everything this feed carries. Signing packages with their authors' keys instead would mean installing every
-author's key on your router, and each one would be a trust anchor for *every* package name, not just
-theirs.
+**This feed signs the index. It does not sign the packages.**
 
-So the question is what this feed checked before it signed. Every package here is built by its
-author and verified against a key pinned in [`keys/`](keys/) before it is ingested, so the feed's
-signature means *the author signed this* rather than *this downloaded successfully*. Nothing in this
-repository is rebuilt: a feed that rebuilds someone's package ships something they never tested.
+That distinction is the whole of what its signature claims. apk takes its trust from the index: the
+index is signed, and every package is checked against the hash recorded in it. Signing the index is
+therefore what makes the feed installable at all, and it cannot be avoided — the authors' keys
+cannot do it, because only this feed can produce an index describing everything this feed carries.
 
-`podkop-updater` goes one further and publishes a signed inventory of its whole release, so the
-size and hash of every package come from a document its author signed rather than from a table
-copied into this repository by hand.
+Signing each package as well would put this feed's signature *inside a file somebody else built*.
+That would be a claim about an artifact rather than about the channel that carried it, and this
+feed does not make it. It did not write these packages and does not review them.
+
+A package that arrives already signed by its author keeps that signature — apk signature blocks are
+additive and nothing here strips them. What you install is the author's file, distributed through a
+signed channel.
+
+Two keys are involved because each package manager verifies only its own scheme: apk checks EC
+prime256v1, opkg checks usign. Both sign indexes.
+
+> One consequence, stated plainly: `apk add ./file.apk` and LuCI's *Upload Package* need
+> `--allow-untrusted` for packages from here. That is the same position OpenWrt itself is in — its
+> own 25.12 packages are unsigned individually, so that path already requires the flag for
+> everything in the official feeds. Installing by name out of the index, which is the documented way
+> and the only one that upgrades, is unaffected.
+
+So the question is what this feed checked before it signed. The answer is narrow, and it is worth
+being exact about, because the signature is easy to read as a broader claim than it is.
+
+### What this feed checks
+
+- The release exists at the repository and tag pinned in `packages/<name>/upstream.sh`.
+- The author's detached signature over it verifies against a public key pinned in
+  [`keys/`](keys/), and the manifest names the repository and tag it claims to be from.
+- The bytes match the `sha256` recorded here, so they have not changed since a person looked.
+- The resulting tree is internally coherent (`owfeed doctor`) and installs on a stock OpenWrt
+  image without `--allow-untrusted` (`owfeed smoke`).
+
+### What this feed does not check
+
+- **What the code does.** No review, no audit, no analysis — of the source or of the binary.
+- **Whether it is safe.** No security assessment of any package, its dependencies, or what it
+  does once running.
+- **Whether it works, or is fit for anything.** `smoke` proves a package installs. It says
+  nothing about whether it does what its author says.
+- **Whether it is lawful where you are.** Software legal in one country is not in another, and
+  this feed makes no assessment of any jurisdiction, including yours.
+- **Whether its declared licence, description or metadata are true.** Those are the author's
+  assertions, carried through unchanged.
+
+The feed's signature therefore means exactly one thing: **these are the bytes this feed
+published, and they came from the author whose key is pinned here.** It is a statement about the
+channel and about provenance. It is not a statement about content, quality, safety, legality or
+suitability, and it must not be read as one.
+
+Nothing in this repository is rebuilt or modified. What is distributed is the author's own file,
+byte for byte.
+
+### Everything here is used at your own risk
+
+**The packages are other people's software.** This feed did not write any of it, does not review
+it, and has no knowledge of what any package does beyond what its author declares. Everything is
+distributed as-is, with no warranty of any kind — the same terms every package's own licence
+already states.
+
+**Responsibility for a package rests entirely with its author** — its contents, its behaviour,
+its security, its lawfulness, and the truth of everything it declares about itself. The author's
+repository is in the package metadata and readable on the router with `apk info <name>`. Questions,
+bug reports and complaints about a package go to them, not here.
+
+If you install something from this feed, you are deciding to run software written by a third party
+that neither you nor this feed has audited. That decision is yours, and the consequences of it are
+yours.
+
+If you believe something here is unlawful or infringes your rights, see
+[SECURITY.md](SECURITY.md) for where to send that; it is acted on rather than argued with.
 
 ## Before you install the key
 

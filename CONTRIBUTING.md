@@ -15,6 +15,46 @@ owfeed.yml                    a packages: entry, only when owfeed has to build i
 
 ---
 
+## What you are agreeing to
+
+Submitting a package here means you assert, and remain solely responsible for, all of the
+following. The feed distributes; it does not review, and it cannot answer for any of this.
+
+- **You have the right to have it distributed** — the licence permits redistribution, its
+  conditions are met, and no trademark or other right of a third party stands in the way.
+- **You are responsible for what is in it.** Its contents, behaviour, security and lawfulness
+  are yours. This feed does not audit code, assess security, or judge legality in any
+  jurisdiction.
+- **Its metadata is true.** The declared licence, description and upstream URL are assertions
+  you make; they are carried through unchanged and shown to users by `apk info`.
+- **You will handle reports about it.** Bug reports, security reports and complaints about the
+  package go to you. The feed will forward what reaches it and can suspend the package, and
+  that is the whole of what it can do.
+
+A package can be suspended at any time, for any reason, without notice — a credible complaint,
+a licence question, a stale upstream, or no reason given. There is no entitlement to remain in
+this feed and no undertaking to keep carrying anything.
+
+**If a claim is brought about your package, it is yours to answer.** You will be told about it
+and given the chance to respond, and the package comes out of the feed while that happens. To
+the extent the law allows, you carry the cost of any claim arising from software you asked this
+feed to distribute — this feed did not write it, does not review it, and is distributing it at
+your request.
+
+**Repeated substantiated claims end the arrangement.** Two upheld claims, or ignoring notices
+forwarded to you, and the package is removed and your key is unpinned from `keys/`. The removal
+is an ordinary commit; the reason is in it.
+
+Adding a `packages/<name>/upstream.sh` naming your repository, or asking for one to be added, is
+how you accept all of the above. If you do not, do not ask for the package to be carried — you
+lose nothing by publishing signed releases yourself, which is what
+[the cookbook](https://owfeed.org/cookbook/) describes.
+
+**Neutral descriptions only.** `description:` says what a package *is* in technical terms and
+nothing about what it is for, what it circumvents, or who should want it. LuCI shows this
+string to users and it travels into the index; keep it factual and under 512 bytes. The same
+applies to anything added to this repository's documentation.
+
 ## I want to add a package
 
 Which of three shapes it is depends on what the upstream publishes. They are listed best first, and
@@ -27,13 +67,13 @@ release with every package's size and hash, and signs it; this feed verifies tha
 then trusts what is inside. So the pin here is a version and a key, and no checksum table.
 
 ```sh
-# packages/podkop-updater/upstream.sh
+# packages/example-daemon/upstream.sh
 KIND="manifest"
-REPO="VizzleTF/podkop_autoupdater"
+REPO="someone/example-daemon"
 VERSION="0.3.5-r1"
 TAG="v0.3.5"
 
-SIG_KEY="keys/podkop-updater.pub"
+SIG_KEY="keys/example-daemon.pub"
 SIG_KEY_ID="37ddece4c0eef357"
 AUTO_MERGE="yes"
 ```
@@ -52,7 +92,7 @@ If your upstream does not do this yet, [that side is one command](#i-build-in-my
 
 ### It publishes a built `.apk`
 
-Nothing to build. The feed distributes exactly what the author released and adds its signature.
+Nothing to build. The feed distributes exactly what the author released, byte for byte.
 
 ```sh
 # packages/luci-theme-footstrap/upstream.sh
@@ -97,11 +137,11 @@ AUTO_MERGE="no"
 
 ```yaml
 # owfeed.yml
-- name: podkop-updater
+- name: example-daemon
   build: mkpkg
   arch: [x86_64, aarch64_cortex-a53, aarch64_cortex-a72, aarch64_generic]
-  version-from: file:./staging/podkop-updater.version
-  files: ./staging/podkop-updater/{arch}
+  version-from: file:./staging/example-daemon.version
+  files: ./staging/example-daemon/{arch}
   description: "One line. LuCI truncates past 512 bytes."
 ```
 
@@ -220,7 +260,7 @@ your repository                              this feed
 ──────────────                               ─────────
 owfeed build                                 hourly: sees your release
 owfeed sign          ← your key              verifies your signature against keys/
-publish a release    ──────────────────────► adds the feed's signature
+publish a release    ──────────────────────► signs the index
                                              indexes, publishes
 ```
 
@@ -247,7 +287,7 @@ owfeed release --repo … --tag …   # signed manifest, and a .sig beside every
 **`owfeed release` is the step this feed reads.** It writes a signed inventory of the release and a
 detached signature beside every package, and the hourly job fetches `<asset>.sig` and checks it
 against the key pinned in `keys/`. Without it there is nothing to verify, and the ingest stops
-rather than carrying something it cannot vouch for. A `.sha256` served from the same release does
+rather than carrying something whose origin it cannot establish. A `.sha256` served from the same release does
 not substitute: it says the download was not corrupted and nothing about who produced it.
 
 Two keys, doing different jobs. `owfeed sign` uses an **EC prime256v1** key and the signature goes
@@ -271,7 +311,8 @@ and the first pin — plus your key under `keys/`. After that the hourly job fol
 opens the updates itself.
 
 Adding your key is the diff that deserves a second look, so expect it to be read carefully. That is
-the moment this feed decides to vouch for you; everything after it is mechanical.
+the moment this feed decides whose provenance it will carry — not that it endorses your software or
+takes responsibility for it, which it never does. Everything after it is mechanical.
 
 ---
 
@@ -337,7 +378,7 @@ Refused in every shape:
   line anywhere else is either a bug in that job or an `upstream.sh` edited underneath it. It is
   also the only way `SIG_KEY_ID` could move, and that would be the verification quietly relaxing
   itself.
-- **No `SIG_KEY`.** Then nothing but the transport vouches for the bytes.
+- **No `SIG_KEY`.** Then nothing but the transport says anything about where the bytes came from.
 - **More than two automatic updates to one package in a day.** The risk is not one bad release but
   a run of them: a stolen key can publish a chain of versions faster than anyone reads the
   notifications, and every one of them verifies. The third waits for a person.

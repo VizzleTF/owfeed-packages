@@ -74,11 +74,13 @@ requested on pull requests the update job itself opened, and that job writes one
 `upstream.sh`. The review becomes a mechanism on the day there is a second
 maintainer, and until then it is a convention.
 
-**An author signature on any package here.** Every package is signed by the feed;
-none carries its author's own in-package EC signature, so the additive-signature
-property `CONTRIBUTING.md` describes is true of the design and demonstrated by
-nothing. `owfeed sign` no longer needs a feed config, so the tooling is not the
-obstacle — it needs an author to generate a key and add a repository secret.
+**An author signature on any package here.** No package carries an in-package EC
+signature from its author, and since `signing.sign-packages: false` the feed adds
+none of its own either — so what routers install is an unsigned file inside a signed
+index. That works, and was measured working, but it means the additive-signature
+property `CONTRIBUTING.md` describes is demonstrated by nothing. `owfeed sign` needs
+no feed config, so the tooling is not the obstacle: it needs an author to generate a
+key and add a repository secret.
 
 ## Known contradictions
 

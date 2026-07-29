@@ -23,6 +23,27 @@ signing:
   # EC prime256v1, opkg checks usign.
   usign-key: env:OWFEED_USIGN_KEY
 
+  # This feed signs the index and nothing else.
+  #
+  # The index is what apk takes its trust from — it is signed, and every package is
+  # checked against the hash recorded in it — so signing it is what makes the feed
+  # installable at all. Signing each package as well would put this feed's signature
+  # inside a file somebody else built, and that is a claim about an artifact rather
+  # than about the channel that carried it. This feed does not make that claim: it did
+  # not write these packages, does not review them, and the signature it applies means
+  # only that these are the bytes it published.
+  #
+  # What this costs is `apk add ./file.apk` and LuCI's Upload Package for packages from
+  # here, both of which then need --allow-untrusted. That is the same position OpenWrt
+  # itself is in: its own 25.12 packages are unsigned individually (commit 084697e), so
+  # that path already requires the flag for everything in the official feeds. Installing
+  # by name out of the signed index — the documented way, and the only one that upgrades
+  # — is unaffected.
+  #
+  # A package that arrives already signed by its author keeps that signature: apk
+  # signature blocks are additive and nothing here strips them.
+  sign-packages: false
+
 publish:
   - target: github-pages
 

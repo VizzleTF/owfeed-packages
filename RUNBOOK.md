@@ -131,8 +131,15 @@ There are two, because each package manager verifies only its own scheme:
 
 | secret | scheme | signs |
 |---|---|---|
-| `OWFEED_SIGN_KEY` | EC prime256v1 | the apk index, and every `.apk` |
+| `OWFEED_SIGN_KEY` | EC prime256v1 | the apk index |
 | `OWFEED_USIGN_KEY` | usign / ed25519 | the opkg index |
+
+Both sign **indexes only**. `signing.sign-packages` is `false` in `owfeed.yml`, so this feed does
+not put its signature inside a package somebody else built — what it distributes is the author's
+file, byte for byte. A router's trust comes from the signed index either way; installing, upgrading
+and removing by name were measured working with no package signature at all, including through
+LuCI's own buttons. What does not work is `apk add ./file.apk` and LuCI's Upload Package, which
+already need `--allow-untrusted` for OpenWrt's own packages.
 
 Both live in repository secrets and nowhere else here. `.gitignore` covers `*.pem` and `*.sec` so
 neither can be committed by accident.
