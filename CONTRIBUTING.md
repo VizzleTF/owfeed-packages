@@ -55,6 +55,46 @@ nothing about what it is for, what it circumvents, or who should want it. LuCI s
 string to users and it travels into the index; keep it factual and under 512 bytes. The same
 applies to anything added to this repository's documentation.
 
+## Every package must be signed by its author
+
+**A package this feed cannot attribute is a package this feed will not publish.** Sign it with
+your own EC key before you release it, and pin the public half here. `owfeed doctor` fails any
+package that carries no signature by a pinned key, and `owfeed publish` refuses the tree — so
+this is enforced by the pipeline rather than asked for in prose.
+
+```sh
+owfeed keygen -o author.pem          # once, outside any git working tree
+gh secret set OWFEED_AUTHOR_KEY < author.pem
+```
+
+Then in your release job, after the build and before you upload anything:
+
+```sh
+owfeed sign --key env:OWFEED_AUTHOR_KEY
+```
+
+Send the **public** half — `author.pub.pem` — with the pull request that adds your package. It
+is pinned as `keys/<package>.pem`.
+
+**Why this and not just the release signature.** The usign signature beside a release is checked
+once, here, at ingest, and then it is gone. The EC signature is inside the `.apk` and reaches the
+router, so anyone can take a published package, fetch your key from somewhere that is not this
+feed, and confirm you built it — a year later, in a dispute, without trusting anyone here. The
+feed's own signature cannot do that: it is on the index, and an index proves only that this feed
+published a file.
+
+It also fixes what nothing else can. This feed signs the index and not the packages, so without
+your signature a published `.apk` carries no evidence of origin at all, and "the author is
+responsible for this package" would be a sentence with nothing behind it.
+
+**The key you send is not what is trusted.** What is trusted is the copy committed to `keys/`,
+because a person looked at it and their name is on the merge. A key travelling beside a release
+proves nothing on its own — whoever replaced the package would replace the key too. Its use is
+that it can disagree with the pin, which is how a rotated or substituted key gets noticed.
+
+One key per repository. A signature says who wrote something and never what it is about, so a key
+shared across repositories is one that vouches for all of them at once.
+
 ## I want to add a package
 
 Which of three shapes it is depends on what the upstream publishes. They are listed best first, and

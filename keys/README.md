@@ -1,8 +1,17 @@
 # Pinned upstream keys
 
-The public keys of the people whose packages this feed carries, in usign form. A release is
-verified against the key pinned here before it is ingested, so this feed's signature means *the
-author signed this*, not *this downloaded successfully*.
+The public keys of the people whose packages this feed carries. Two kinds, doing two different
+jobs, and both are pinned here for the same reason.
+
+**`*.pub` — usign.** Verifies the detached signature beside a release, before this feed reads or
+unpacks anything. It answers *did the author publish these bytes*, at ingest time, and then it is
+done: the signature it checks never leaves this repository.
+
+**`*.pem` — EC prime256v1.** The key an author signs the package itself with. That signature is
+inside the `.apk` and travels all the way to the router, so it can be checked by anyone, at any
+time, against a copy of the key obtained from somewhere that is not this feed. It is the only
+claim about a package that survives the feed — this feed signs the index, and an index proves only
+that this feed published a file.
 
 Pinned rather than fetched: whoever can replace an artifact can replace the signature beside it and
 the key it names. A key is only a check once it comes from somewhere the attacker does not control,
@@ -12,10 +21,26 @@ Adding or changing a key is the one diff in this repository that deserves a seco
 key out of band — against the author's repository, a fingerprint they published elsewhere, anything
 that is not the release you are about to trust it for.
 
+### usign — release signatures, checked at ingest
+
 | key | id | covers |
 |---|---|---|
 | `vizzletf-release.pub` | `18c63865e2bcf8d6` | `luci-theme-footstrap`, `luci-app-footstrap-updater` |
 | `podkop-updater.pub` | `37ddece4c0eef357` | `podkop-updater` |
+
+### EC — package signatures, checked on the router by anyone who wants to
+
+One per repository, which is what the note below asks for and what these meet.
+
+| key | identity | covers |
+|---|---|---|
+| `luci-theme-footstrap.pem` | `9bdfe74fb2b896642afbdebd9a4d653c` | `luci-theme-footstrap` |
+| `luci-app-footstrap-updater.pem` | `19e4d189964d99db0a3b6ba04edb4552` | `luci-app-footstrap-updater` |
+| `podkop-updater.pem` | `2e6784ccfa5af1f908b5904d26067249` | `podkop-updater` |
+
+`signing.author-keys` in `owfeed.yml` points at this directory, and `owfeed doctor` fails any
+package that carries no signature by one of these. Only `.pem` files are read for that; the usign
+keys sit alongside and are used by `tools/fetch.sh`.
 
 A key per upstream repository rather than one per person is what this feed wants, and the table
 above does not yet meet it: `vizzletf-release.pub` covers two repositories, because one release
