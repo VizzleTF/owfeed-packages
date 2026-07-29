@@ -22,7 +22,7 @@ the difference being throwaway keys, no environment and no deploy. `publish.yml`
 by hand, for the reason at the top of it; the comment there says what has to be true before it moves
 too.
 
-**How owfeed gets here.** `owfeed/owfeed/setup@v0.1.7`, pinned to a release. The action downloads
+**How owfeed gets here.** `owfeed/owfeed/setup@v0.2.0`, pinned to a release. The action downloads
 one binary and checks it against the build attestation from owfeed's own release workflow before
 running it — not against a checksum from the same release, which whoever replaced the binary could
 replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
