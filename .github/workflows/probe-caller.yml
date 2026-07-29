@@ -4,3 +4,4 @@ on:
 jobs:
   probe:
     uses: VizzleTF/owfeed/.github/workflows/probe.yml@main
+    secrets: inherit
