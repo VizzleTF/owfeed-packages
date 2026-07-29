@@ -48,6 +48,50 @@ download() {
 	[ "$got" = "$3" ] || { echo "$1: sha256 $got, pinned $3" >&2; rm -f "$2"; exit 1; }
 }
 
+# fetch_source
+#
+# The corresponding source, fetched and staged beside the binaries rather than linked
+# to. This is what lets the feed carry a copyleft package at all.
+#
+# GPLv2 §3 conditions distributing a binary on one of three things: the source
+# accompanying it, a written offer valid for three years, or -- non-commercially and
+# only if you received such an offer -- passing that offer along. Publishing a binary
+# and linking to a GitHub repository is none of the three. Upstream's distribution is
+# upstream's; a feed re-serving those bytes is a separate act of distribution with its
+# own obligation, and "the source is over there somewhere" does not discharge it.
+#
+# Serving the source from the same origin as the binary is the first option, and it is
+# the only one that needs no promise anybody has to remember to keep for three years.
+#
+# What this can and cannot claim: it serves exactly the archive upstream published for
+# the pinned tag, byte-checked, so the feed offers the same source upstream offers and
+# cannot drift from it. Whether that archive is complete corresponding source is
+# upstream's assertion, not this feed's -- and it is the same assertion every consumer
+# of upstream already relies on.
+fetch_source() {
+	[ -n "${SOURCE_URL:-}" ] || return 0
+	[ -n "${SOURCE_SHA256:-}" ] || {
+		echo "$NAME: SOURCE_URL is set without SOURCE_SHA256" >&2
+		exit 1
+	}
+	mkdir -p "$DIST/sources"
+	# Named for the package and version, because that is the pair a user holding a
+	# binary has: `apk info` tells them both, and nothing else identifies which
+	# source goes with what they installed.
+	ext="${SOURCE_URL##*/}"
+	case "$ext" in
+	*.tar.gz|*.tgz) ext="tar.gz" ;;
+	*.tar.xz)       ext="tar.xz" ;;
+	*.tar.bz2)      ext="tar.bz2" ;;
+	*.zip)          ext="zip" ;;
+	*)              ext="tar.gz" ;;
+	esac
+	dest="$DIST/sources/${NAME}-${VERSION}.${ext}"
+	download "$SOURCE_URL" "$dest" "$SOURCE_SHA256"
+	printf '%s %s %s\n' "$NAME" "$VERSION" "$(basename "$dest")" >> "$DIST/sources/staged.txt"
+	echo ">> $NAME: staged corresponding source $(basename "$dest")"
+}
+
 # check_signature <file>
 #
 # A pin proves the bytes have not changed since someone looked at them. The author's
@@ -233,3 +277,7 @@ binaries)
 	exit 1
 	;;
 esac
+
+# After the artifacts, so a package whose binaries failed never leaves a source
+# archive behind suggesting it was carried.
+fetch_source

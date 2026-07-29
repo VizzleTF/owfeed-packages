@@ -82,19 +82,46 @@ Rebuilding a package from source would be a further step again. That artifact is
 not upstream's, and publishing it under the upstream name is much closer to what the policy
 forbids.
 
-### GPL-2.0 asks for something Apache-2.0 does not
+### GPL-2.0 asks for something Apache-2.0 does not, and the feed now answers it
 
 GPLv2 §3 conditions binary distribution on source: accompanying it, or a written offer valid for
 three years, or — for non-commercial distribution only — passing along the offer you received.
 
-A feed that publishes a GPL binary and links to a GitHub repository has not obviously satisfied any
-of the three. Upstream's own distribution is fine; ours is a separate act of distribution with its
-own obligations.
+A feed that publishes a GPL binary and links to a GitHub repository has not satisfied any of the
+three. Upstream's own distribution is fine; ours is a separate act of distribution with its own
+obligations.
 
-This is the part that is genuinely unresolved, and it is why podkop is not in this feed. The
-contribution flow was exercised against it on a branch — which is how the `v`-tag assumption in
-`tools/fetch.sh` was found and fixed — and the branch was not merged. Nothing is published until
-the source obligation has an answer and the author has been asked.
+**This is answered now, and mechanically.** The feed takes the first option: the corresponding
+source is fetched, checksum-pinned and served from the same origin as the binary, at
+`https://repo.owfeed.org/sources/`, listed in
+[`sources/index.txt`](https://repo.owfeed.org/sources/index.txt). Of the three options it is the
+only one that depends on nobody remembering anything — the source is there for exactly as long as
+the binary is, because the same publish puts both there.
+
+`tools/sources.sh` runs between `owfeed index` and `owfeed publish` and reads each package's
+declared licence out of the built index. If a package declares a copyleft licence and no source is
+served for that exact name and version, the run fails and nothing is published. So the answer is
+not a policy anybody has to apply — a GPL package without source cannot reach the feed.
+
+The licence is read from the index rather than from a field in this repository on purpose. The
+index is built from the metadata inside the package, which its author set, and it is the same
+string `apk info` shows on the router. A field here would be this feed's opinion about someone
+else's licence, and it would go stale the first time upstream relicensed.
+
+**What the feed does and does not claim.** It serves exactly the archive upstream published for the
+pinned tag, verified by hash, so what the feed offers is what upstream offers and cannot drift from
+it. Whether that archive is *complete corresponding source* is upstream's assertion — the same one
+every other consumer of that release already relies on. Where a project ships no source archive
+with its release, the feed cannot carry it: there is nothing to serve.
+
+**So: can this feed carry GPL packages?** Yes, provided the package's release includes a source
+archive to pin. That is the whole condition, and the check enforces it.
+
+The source obligation was the blocker and it no longer is: `SOURCE_URL` and `SOURCE_SHA256` in a
+package's `upstream.sh` are all it takes, and the publish refuses without them. What remains before
+podkop could be carried is the part no script settles — asking the author. The contribution flow
+was exercised against it on a branch, which is how the `v`-tag assumption in `tools/fetch.sh` was
+found and fixed, and the branch was not merged.
 
 ## What we do about it
 

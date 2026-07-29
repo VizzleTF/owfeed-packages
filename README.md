@@ -92,6 +92,11 @@ itself once the checks pass. The checks still have to pass.
 Every package here declares its licence and its upstream, and both travel into the index and into
 `apk info` on the router — a user can always find out whose software they installed.
 
+Where a package is copyleft, its **corresponding source is served from this feed**, at
+[`/sources/`](https://repo.owfeed.org/sources/index.txt) — the same origin as the binary, which is
+what GPLv2 §3 asks of anyone distributing one. A copyleft package with no source in the tree fails
+the publish, so this is a gate rather than an intention.
+
 Redistributing someone else's work needs more than a licence that allows it, and
 [LEGAL.md](LEGAL.md) is where this feed writes down what it read and what it decided.
 *([Русский](LEGAL_ru.md))*

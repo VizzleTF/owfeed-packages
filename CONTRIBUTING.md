@@ -141,6 +141,31 @@ index entirely rather than present and unresolvable:
   releases: ["25.12"]
 ```
 
+### If the package is copyleft, pin its source too
+
+A package declaring GPL, LGPL, AGPL, MPL, EPL or CDDL cannot be published here without the
+corresponding source served beside it. That is not a house rule: GPLv2 §3 conditions distributing a
+binary on providing source, and this feed re-serving upstream's bytes is a second act of
+distribution carrying the obligation again. Linking to the repository satisfies none of the three
+options the licence gives.
+
+Two more lines, and the feed serves the source from the same URL as the binary:
+
+```sh
+SOURCE_URL="https://github.com/owner/project/archive/refs/tags/v1.2.3.tar.gz"
+SOURCE_SHA256="9f2c…"
+```
+
+`tools/sources.sh` runs before the publish, reads each package's licence out of the built index and
+fails the run if a copyleft package has no source for that exact version. Nothing is published in
+that case, so this is enforced rather than remembered.
+
+The licence comes from the metadata inside your package — the same string `apk info` shows — so
+there is nothing to declare here about it, and nothing to keep in sync when you relicense.
+
+If your release publishes no source archive at all, this feed cannot carry the package: there is
+nothing for it to serve. Cutting a release with the tarball attached is usually the smallest fix.
+
 ### Then
 
 ```sh
