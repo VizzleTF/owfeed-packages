@@ -74,7 +74,7 @@ owfeed sign --key env:OWFEED_AUTHOR_KEY
 ```
 
 Send the **public** half — `author.pub.pem` — with the pull request that adds your package. It
-is pinned as `keys/<package>.pem`.
+is pinned as `keys/<package>.pub.pem`.
 
 **Why this and not just the release signature.** The usign signature beside a release is checked
 once, here, at ingest, and then it is gone. The EC signature is inside the `.apk` and reaches the

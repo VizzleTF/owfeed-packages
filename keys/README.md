@@ -34,12 +34,12 @@ One per repository, which is what the note below asks for and what these meet.
 
 | key | identity | covers |
 |---|---|---|
-| `luci-theme-footstrap.pem` | `9bdfe74fb2b896642afbdebd9a4d653c` | `luci-theme-footstrap` |
-| `luci-app-footstrap-updater.pem` | `19e4d189964d99db0a3b6ba04edb4552` | `luci-app-footstrap-updater` |
-| `podkop-updater.pem` | `2e6784ccfa5af1f908b5904d26067249` | `podkop-updater` |
+| `luci-theme-footstrap.pub.pem` | `9bdfe74fb2b896642afbdebd9a4d653c` | `luci-theme-footstrap` |
+| `luci-app-footstrap-updater.pub.pem` | `19e4d189964d99db0a3b6ba04edb4552` | `luci-app-footstrap-updater` |
+| `podkop-updater.pub.pem` | `2e6784ccfa5af1f908b5904d26067249` | `podkop-updater` |
 
 `signing.author-keys` in `owfeed.yml` points at this directory, and `owfeed doctor` fails any
-package that carries no signature by one of these. Only `.pem` files are read for that; the usign
+package that carries no signature by one of these. Only files ending in `.pem` are read for that; the usign
 keys sit alongside and are used by `tools/fetch.sh`.
 
 A key per upstream repository rather than one per person is what this feed wants, and the table
