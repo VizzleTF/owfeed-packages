@@ -28,6 +28,17 @@ running it — not against a checksum from the same release, which whoever repla
 replace too. It used to be `go install …@<sha>`, which compiled the tool on every job and verified
 nothing: `go install` trusts whatever the module proxy returns for that revision.
 
+**Wait for the owfeed release before moving the pin.** `setup` verifies the binary against the
+attestation from owfeed's own release workflow and refuses to install one that does not verify —
+including one that does not exist yet. Pushing `setup@vX.Y.Z` here while that release is still
+building fails every job with *"does not verify as built by owfeed/owfeed's release workflow"*,
+which reads like an attack and is a race. Check the release is published, then move the pin.
+
+**Move the package pins in the same commit as a policy that requires them.** Turning on
+`signing.author-keys` while the pins still name unsigned releases would exclude every package the
+feed carries and publish an empty tree — the publish would succeed, which is the worst shape that
+failure can take.
+
 Moving to a new owfeed release is two lines in `pr.yml`, two in `publish.yml` and two in
 `intake.yml` — `grep -rn 'v0\.' .github/workflows` is the check, rather than counting from memory, and it should be a pull request like anything else. The tool that signs this feed should move when someone changes a
 line, not whenever an unrelated repository is pushed to.
