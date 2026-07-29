@@ -33,7 +33,7 @@ build:
   script:
     - |
       curl -fsSL -o /usr/local/bin/owfeed \
-        "https://github.com/VizzleTF/owfeed/releases/download/${OWFEED_VERSION}/owfeed-linux-amd64"
+        "https://github.com/owfeed/owfeed/releases/download/${OWFEED_VERSION}/owfeed-linux-amd64"
       chmod +x /usr/local/bin/owfeed
     - ./stage.sh                      # your build: produce the directory to package
     - owfeed lock --update

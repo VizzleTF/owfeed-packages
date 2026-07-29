@@ -1,7 +1,7 @@
 # owfeed community packages
 
 An OpenWrt package feed for **both release lines** — apk for 25.12 and later, opkg for 24.10 and
-earlier — built and published by [owfeed](https://github.com/VizzleTF/owfeed).
+earlier — built and published by [owfeed](https://github.com/owfeed/owfeed).
 
 ## Install
 
@@ -13,8 +13,8 @@ Which set you run depends on your release: 25.12 and later is apk, 24.10 and ear
 # HTTPS on a stock image needs these two first.
 apk add ca-bundle libustream-mbedtls
 
-wget https://vizzletf.github.io/owfeed-packages/owfeed-packages.pem -O /etc/apk/keys/owfeed-packages.pem
-echo "https://vizzletf.github.io/owfeed-packages/releases/25.12/$(cat /etc/apk/arch)/packages.adb" > /etc/apk/repositories.d/owfeed-packages.list
+wget https://repo.owfeed.org/owfeed-packages.pem -O /etc/apk/keys/owfeed-packages.pem
+echo "https://repo.owfeed.org/releases/25.12/$(cat /etc/apk/arch)/packages.adb" > /etc/apk/repositories.d/owfeed-packages.list
 
 # Neither of those two files survives a sysupgrade on its own.
 printf '%s\n' /etc/apk/keys/owfeed-packages.pem /etc/apk/repositories.d/owfeed-packages.list >> /etc/sysupgrade.conf
@@ -26,9 +26,9 @@ apk update && apk add podkop-updater
 
 ```sh
 # The key file's NAME is its id — opkg looks it up by that.
-wget https://vizzletf.github.io/owfeed-packages/9040356b214084da -O /etc/opkg/keys/9040356b214084da
+wget https://repo.owfeed.org/9040356b214084da -O /etc/opkg/keys/9040356b214084da
 
-echo "src/gz owfeed-packages https://vizzletf.github.io/owfeed-packages/releases/24.10/$(. /etc/openwrt_release; echo $DISTRIB_ARCH)" >> /etc/opkg/customfeeds.conf
+echo "src/gz owfeed-packages https://repo.owfeed.org/releases/24.10/$(. /etc/openwrt_release; echo $DISTRIB_ARCH)" >> /etc/opkg/customfeeds.conf
 
 opkg update && opkg install podkop-updater
 ```
@@ -112,9 +112,9 @@ per-package script.
 
 Pull requests run the whole pipeline with a throwaway key, so a fork never comes near the feed's own.
 
-This feed is one end of a longer lifecycle: [owlab](https://github.com/VizzleTF/owlab) is where a
-package is developed and proven to work, [owfeed](https://github.com/VizzleTF/owfeed) is where it is
+This feed is one end of a longer lifecycle: [owlab](https://github.com/owfeed/owlab) is where a
+package is developed and proven to work, [owfeed](https://github.com/owfeed/owfeed) is where it is
 signed and indexed, and this repository decides whose keys it trusts and hands the result to routers.
-[ECOSYSTEM.md](https://github.com/VizzleTF/owfeed/blob/main/docs/ECOSYSTEM.md) is where the boundary
+[ECOSYSTEM.md](https://github.com/owfeed/owfeed/blob/main/docs/ECOSYSTEM.md) is where the boundary
 between the three is written down — including why nothing is ever built here.
 [STATUS.md](STATUS.md) says how much of this feed's side of it exists, and what is still open.

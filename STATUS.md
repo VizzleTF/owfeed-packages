@@ -1,6 +1,6 @@
 # What is built in this feed, and what is not
 
-*[ECOSYSTEM.md](https://github.com/VizzleTF/owfeed/blob/main/docs/ECOSYSTEM.md) in
+*[ECOSYSTEM.md](https://github.com/owfeed/owfeed/blob/main/docs/ECOSYSTEM.md) in
 owfeed says where the boundaries between owlab, owfeed and this feed run and why.
 This file says how much of this feed's side of that exists, as of 2026-07-28.*
 

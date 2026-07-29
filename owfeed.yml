@@ -3,10 +3,10 @@ version: 1
 
 feed:
   name: owfeed-packages
-  url: https://vizzletf.github.io/owfeed-packages
+  url: https://repo.owfeed.org
   title: owfeed community packages
   maintainer: "VizzleTF <vizzletf47@gmail.com>"
-  homepage: https://github.com/VizzleTF/owfeed-packages
+  homepage: https://github.com/owfeed/owfeed-packages
 
 releases:
   # 25.12 and later is apk; 24.10 and earlier is opkg. Routers stay on a release
