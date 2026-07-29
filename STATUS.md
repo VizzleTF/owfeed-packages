@@ -41,7 +41,7 @@ it is the last time the URL has to move.
 ## Not built, and why
 
 **`publish.yml` on owfeed's reusable `feed.yml`.** `pr.yml` has moved: it calls
-`feed.yml@v0.2.0` with `dry-run: true`, so a pull request now exercises the same
+`feed.yml@v0.2.1` with `dry-run: true`, so a pull request now exercises the same
 file the publish path is written from, with throwaway keys and no environment.
 `publish.yml` has not, and the thing it turns on is narrow: whether a called job's
 `environment:` resolves against the caller's repository, where `feed` exists, or
