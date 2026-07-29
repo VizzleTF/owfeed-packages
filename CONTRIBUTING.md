@@ -246,11 +246,31 @@ relicense. `tools/sources.sh` reads it out of the built index before the publish
 copyleft package that has no source for that exact version, so this is enforced rather than
 remembered.
 
+### Your package says where it came from
+
+One field, set where your package is built:
+
+```make
+define Package/luci-app-mine
+  URL:=https://github.com/you/luci-app-mine
+endef
+```
+
+It travels into the index and into what `apk info` prints on the router, and in a feed carrying
+other people's work it is the only thing telling a user who published what they just installed.
+`tools/check-origin.sh` refuses to publish a package without it, and the intake check on your issue
+reads it out of your `.ipk` before anyone spends time on a pull request.
+
+A value that is set and is not a URL fails the same way an absent one does. `Source:` on a
+package built by OpenWrt's SDK is the feed path it was built from, not a place anyone can go —
+which is why `URL:=` is the field to set even when `Source:` already looks filled in.
+
 ### Then
 
 ```sh
 ./tools/fetch.sh packages/<name>
 owfeed build && owfeed sign && owfeed index && owfeed doctor --require-origin
+./tools/check-origin.sh && ./tools/sources.sh
 owfeed smoke                 # 25.12, on a real router
 owfeed smoke --release 24.10 # 24.10, on a real router
 ```
@@ -383,6 +403,7 @@ attempts:
 | `.po` files in the payload | LuCI reads compiled `.lmo`. Point `i18n.from:` at them. |
 | A version apk cannot parse | after `~` only hex digits; `-r<n>` last. |
 | A package that builds and will not install | `smoke` installs the feed on a real OpenWrt image and fails if apk asks for `--allow-untrusted`. |
+| A package that names no upstream | `tools/check-origin.sh` reads `url` out of the built index and will not publish a package a user cannot trace back to whoever wrote it. |
 
 Each finding says what it costs and what to do about it.
 

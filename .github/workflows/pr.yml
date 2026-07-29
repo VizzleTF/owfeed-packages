@@ -40,7 +40,7 @@ jobs:
       owfeed-version: v0.4.5
       dry-run: true
       pre-build: for d in packages/*/; do ./tools/fetch.sh "$d"; done
-      post-index: ./tools/check-tree.sh && ./tools/sources.sh
+      post-index: ./tools/check-tree.sh && ./tools/check-origin.sh && ./tools/sources.sh
       # The last gate, and the only one that asks apk rather than telling it:
       # install the feed on a real OpenWrt image, following the published
       # snippet, and prove `apk add` needs no --allow-untrusted. Both lines,

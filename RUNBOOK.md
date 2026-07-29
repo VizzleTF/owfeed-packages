@@ -8,9 +8,9 @@ Operating the feed. For adding or updating a package, see [CONTRIBUTING.md](CONT
 
 | when | what | key present? |
 |---|---|---|
-| pull request | fetch → build → sign → index → check-tree → doctor → smoke (both lines) | throwaway ones |
+| pull request | fetch → build → sign → index → check-tree → check-origin → sources → doctor → smoke (both lines) | throwaway ones |
 | push to `main` | job 1: fetch → build | **no** |
-| | job 2: sign → index → check-tree → smoke → verify → publish → Pages | **yes**, behind `environment: feed` |
+| | job 2: sign → index → check-tree → check-origin → sources → smoke → verify → publish → Pages | **yes**, behind `environment: feed` |
 | hourly | ask each upstream for its latest release; open a pull request if there is one | no |
 
 The split on `main` is the point: the fetch scripts execute values contributed by pull requests, and
@@ -87,6 +87,12 @@ somewhere nothing looks.
 
 **`sha256 … pinned …`** in the fetch step. The upstream replaced a release in place. Do not update
 the pin to make it pass — find out why the bytes changed first.
+
+**`NO ORIGIN …`** from `tools/check-origin.sh`, after the index is built. A package reached the tree
+without saying where it comes from, and this feed does not publish it. Nothing here fixes that: the
+field is set where the package is built, so the answer is a message to upstream. A value like
+`feeds/base/<name>` fails the same way an empty one does — that is the path the SDK built from, not
+somewhere a user can go.
 
 ---
 

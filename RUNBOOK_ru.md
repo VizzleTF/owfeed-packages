@@ -8,9 +8,9 @@
 
 | когда | что | ключ есть? |
 |---|---|---|
-| pull request | fetch → build → sign → index → check-tree → doctor → smoke (обе линии) | одноразовые |
+| pull request | fetch → build → sign → index → check-tree → check-origin → sources → doctor → smoke (обе линии) | одноразовые |
 | push в `main` | job 1: fetch → build | **нет** |
-| | job 2: sign → index → check-tree → smoke → verify → publish → Pages | **да**, за `environment: feed` |
+| | job 2: sign → index → check-tree → check-origin → sources → smoke → verify → publish → Pages | **да**, за `environment: feed` |
 | раз в час | спросить у каждого апстрима свежий релиз, открыть PR, если он есть | нет |
 
 Разделение на `main` — в этом весь смысл: fetch исполняет значения, пришедшие из pull request'а, и в
@@ -85,6 +85,11 @@ MISSING luci-theme-footstrap 0.11.6-r1 on 24.10: absent from 36 of 36 architectu
 
 **`sha256 … pinned …`** на шаге fetch. Апстрим подменил релиз на месте. Не правьте пин, чтобы
 прошло, — сначала выясните, почему изменились байты.
+
+**`NO ORIGIN …`** от `tools/check-origin.sh`, после сборки индекса. Пакет дошёл до дерева, не сказав,
+откуда он, и этот фид его не публикует. Здесь это не чинится: поле ставится там, где пакет
+собирается, так что ответ — письмо апстриму. Значение вида `feeds/base/<name>` валится так же, как
+пустое: это путь, из которого собирал SDK, а не место, куда можно пойти.
 
 ---
 

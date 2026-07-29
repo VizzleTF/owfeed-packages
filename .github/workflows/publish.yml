@@ -42,7 +42,7 @@ jobs:
     with:
       owfeed-version: v0.4.5
       pre-build: for d in packages/*/; do ./tools/fetch.sh "$d"; done
-      post-index: ./tools/check-tree.sh && ./tools/sources.sh
+      post-index: ./tools/check-tree.sh && ./tools/check-origin.sh && ./tools/sources.sh
       # Both lines, because a feed serving two and testing one is a feed serving
       # one. This is the only gate that asks apk rather than telling it: install
       # from the built index on a real OpenWrt image and prove `apk add` needs no

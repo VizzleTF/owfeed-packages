@@ -137,9 +137,18 @@ found and fixed, and the branch was not merged.
 GPLv2 §3. An author who says yes has also told you where to send bug reports; one who says no has
 saved everyone a dispute. Nothing here is urgent enough to skip that.
 
-**Record what we know.** Every package declares its `license:` and its `url:`, both of which travel
-into the index and into `apk info` on the router. `owfeed publish` refuses a package that does not
-name its upstream. A user who installs something from this feed can always find out whose it is.
+**Record what we know.** Every package declares its licence and its URL, both of which travel from
+the package into the index and into what `apk info` prints on the router. `tools/check-origin.sh`
+refuses to publish one that does not name its upstream. A user who installs something from this
+feed can always find out whose it is.
+
+That is a separate script rather than `owfeed doctor` because doctor asks the question of
+`owfeed.yml`, and this feed's `packages:` list is empty by design — every package is built and
+signed by its author and ingested unchanged, so the field lives inside the package. Doctor was
+checking the origin of zero packages, and this paragraph described a feed that builds rather than
+this one. The URL is read from the index for the same reason the licence is: it is the author's
+own metadata, and a value kept in this repository would be our opinion about someone else's
+package.
 
 **Do not claim what was not granted.** A licence field is an assertion about someone else's
 intentions. Where the upstream has published none, the honest thing is to say so and not publish,

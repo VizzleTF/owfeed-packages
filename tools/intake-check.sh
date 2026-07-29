@@ -120,6 +120,52 @@ binaries)
 	;;
 esac
 
+# Does the package say where it comes from?
+#
+# Read out of the package rather than asked for in the form. A field in the issue
+# would be the requester's claim about their own package, and the string that decides
+# anything is the one the package manager prints on the router. `tools/check-origin.sh`
+# refuses to publish a package without it, and learning that here costs a minute
+# instead of a pull request.
+#
+# The .ipk is what gets read, because it can be: it is a tar holding a tar, and
+# `tar -xzO` streams the control file to stdout without writing anything to disk --
+# which is what makes reading a stranger's archive in a workflow like this one safe.
+# The .apk is an ADB container and needs the apk tool, which is not installed here.
+# A release with no .ipk therefore goes unchecked and says so, rather than passing
+# quietly.
+if [ "$KIND" = "binaries" ]; then
+	say "- Origin not checked here: this feed builds the package, so its upstream comes from \`url:\` in \`owfeed.yml\` and is written in the pull request."
+else
+	ipk="$(gh release view "$TAG" --repo "$REPO" --json assets \
+		-q '[.assets[].name | select(endswith(".ipk"))] | first // empty' 2>/dev/null || true)"
+
+	if [ -z "$ipk" ]; then
+		say "- Origin not checked: the release publishes no \`.ipk\`, and the \`.apk\` container cannot be read here. \`tools/check-origin.sh\` reads it at build time."
+	elif ! gh release download "$TAG" --repo "$REPO" --pattern "$ipk" --dir "$WORK" --clobber >/dev/null 2>&1; then
+		say "- Origin not checked: \`$ipk\` could not be downloaded."
+	else
+		# URL first, Source as the fallback: a package built by OpenWrt's SDK puts
+		# the repository in URL and the feed path it was built from in Source, while
+		# one built by owfeed has no URL at all and carries the repository in Source.
+		origin="$(tar -xzOf "$WORK/$ipk" --wildcards '*control.tar.gz' 2>/dev/null \
+			| tar -xzO --wildcards '*control' 2>/dev/null \
+			| awk '/^URL: /{u=substr($0,6)} /^Source: /{s=substr($0,9)} END{print (u!="")?u:s}')"
+
+		case "$origin" in
+		*://*)
+			good "The package names its upstream: \`$origin\`."
+			;;
+		"")
+			bad "The package names no upstream. Set \`URL:=\` in the \`define Package/\` block that builds it — \`tools/check-origin.sh\` refuses to publish a package a user cannot trace."
+			;;
+		*)
+			bad "The package names \`$origin\`, which is not somewhere a user can go. That is usually the feed path the SDK built from; set \`URL:=\` in the \`define Package/\` block as well."
+			;;
+		esac
+	fi
+fi
+
 say ""
 if [ "$fail" -ne 0 ]; then
 	say "### Not ready"
