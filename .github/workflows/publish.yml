@@ -1,117 +1,50 @@
 name: Publish
 
-# These two jobs are the shape owfeed ships as a reusable workflow, written out by
-# hand. pr.yml has already moved to the reusable one; this file has not, and the
-# reason is here rather than in a commit message nobody re-reads.
+# The same reusable workflow `pr.yml` calls, in the mode that publishes.
 #
-# owfeed v0.1.7's publish job reads OWFEED_SIGN_KEY from the environment it
-# declares rather than taking it as a workflow_call secret, which is what used to
-# force a feed's key out to repository scope. So the migration is unblocked in
-# principle -- and it turns on a detail no documentation states outright: whether a
-# called job's `environment:` resolves against the caller's repository, where the
-# `feed` environment exists, or the called workflow's, where it does not. If it is
-# the latter, the key is unreachable and the publish stops.
+# It was written out by hand until the environment question was answered: a called
+# job declares `environment: feed`, and nothing in GitHub's documentation says
+# whose `feed` that is -- this repository's, where the signing keys live, or
+# owfeed's, where no such environment exists. Measured rather than guessed: a
+# probe workflow reporting an environment variable set to a different value in
+# each repository came back with this one's, and the signing secrets scoped to
+# this environment reached the called job at their real length. The environment
+# resolves against the caller. The keys stay where they are and the pipeline is
+# owfeed's.
 #
-# pr.yml exercises every other part of feed.yml on each pull request with no
-# secrets involved. Once that has been green for a while and the environment
-# question has been answered on a real run, this file becomes the same six lines
-# with `secrets: inherit` and `dry-run` left out. Until then the feed keeps
-# publishing through a path that is known to work.
+# What that buys: a fix to the shape of a publish reaches this feed by moving one
+# pinned tag, and the pull-request check runs the identical file.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
-env:
-  # A package's identity is a hash over its payload, and mkpkg records mtimes. Without
-  # a fixed epoch every rebuild produces a new identity for byte-identical content, so
-  # each republication ships packages that claim to be new, invalidating every cached
-  # copy and making `owfeed verify` report tampering that did not happen.
-  #
-  # A constant, not a timestamp: identity should depend on what a package contains and
-  # on nothing else. Content changes only when a pin changes, and a pin change comes
-  # with a version bump.
-  SOURCE_DATE_EPOCH: '1700000000'
-
-
-concurrency:
-  group: owfeed-publish
-  cancel-in-progress: false
-
 jobs:
-  # The build job runs the fetch scripts, which execute code from pull requests.
-  # It never sees the signing key.
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: VizzleTF/owfeed/setup@v0.1.7
-        with:
-          version: v0.1.7
-
-      - name: Fetch upstream artifacts
-        run: for d in packages/*/; do ./tools/fetch.sh "$d"; done
-
-      - run: owfeed --frozen-lock build
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: packages
-          path: dist/
-          retention-days: 1
-
   publish:
-    needs: build
-    runs-on: ubuntu-latest
-    # A protected environment, so the key is out of reach of anything that runs
-    # before a human has looked at it.
-    environment: feed
     permissions:
+      # A called workflow can only narrow these, never widen them, so the caller
+      # grants what the publish job needs. `actions: read` is deploy-pages
+      # resolving the build job's artifact through the Actions API.
       contents: read
       pages: write
       id-token: write
-      # deploy-pages resolves the artifact by id through the Actions API from v4, and
-      # a permissions block sets every scope it does not name to none.
       actions: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: VizzleTF/owfeed/setup@v0.1.7
-        with:
-          version: v0.1.7
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: packages
-          path: dist/
-
-      - name: Sign, index and check
-        env:
-          OWFEED_SIGN_KEY: ${{ secrets.OWFEED_SIGN_KEY }}
-          # opkg verifies usign, apk verifies EC. A feed serving both lines needs both.
-          OWFEED_USIGN_KEY: ${{ secrets.OWFEED_USIGN_KEY }}
-        run: |
-          owfeed sign
-          owfeed index
-          ./tools/check-tree.sh
-          owfeed smoke
-          owfeed smoke --release 24.10
-          # Compare what is about to go out against what is already live, before it
-          # replaces it. A version republished with different contents is invisible
-          # from inside the tree, which is self-consistent either way.
-          owfeed verify out || true
-          owfeed publish
-
-      # include-hidden-files: from v4 this action excludes dotfiles, and `.nojekyll`
-      # is a dotfile. Without it Pages runs Jekyll over a tree of binaries and drops
-      # every path beginning with a dot or an underscore -- from a tree that was
-      # correct when owfeed checked it. `owfeed verify` reports OWF514 when the live
-      # site has lost it.
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: out
-          include-hidden-files: true
-      - uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+    # Pinned to a release, not tracked at @main. This repository signs what it
+    # publishes; the workflow that shapes the signing should move when someone
+    # changes this line, not whenever an unrelated repository is pushed to.
+    uses: VizzleTF/owfeed/.github/workflows/feed.yml@v0.1.7
+    # So the publish job can read OWFEED_SIGN_KEY and OWFEED_USIGN_KEY from the
+    # `feed` environment. They are environment secrets, not repository ones --
+    # the hourly update job and every pull-request check are outside that scope
+    # and cannot reach them.
+    secrets: inherit
+    with:
+      owfeed-version: v0.1.7
+      pre-build: for d in packages/*/; do ./tools/fetch.sh "$d"; done
+      post-index: ./tools/check-tree.sh
+      # Both lines, because a feed serving two and testing one is a feed serving
+      # one. This is the only gate that asks apk rather than telling it: install
+      # from the built index on a real OpenWrt image and prove `apk add` needs no
+      # --allow-untrusted.
+      smoke-releases: "25.12 24.10"
