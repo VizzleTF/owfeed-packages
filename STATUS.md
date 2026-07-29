@@ -9,6 +9,17 @@ stale on exactly the facts none of its own CI touches. Beside the thing it
 describes, a claim that stops being true is a line in the pull request that made
 it untrue.
 
+**The feed moved to `https://repo.owfeed.org` on 2026-07-29**, from
+`https://vizzletf.github.io/owfeed-packages`. Routers subscribed to the old URL
+carry it in `/etc/apk/repositories.d/`, listed in `/etc/sysupgrade.conf` so it
+survives a firmware upgrade, and GitHub does not redirect Pages across owners:
+they get a 404 from `apk update` and stop receiving updates, with nothing to be
+done for them from here. That is the same shape as this feed's own argument about
+key revocation -- a router offline when it matters cannot be reached at all. The
+move happened now, before any third-party package was carried, because the
+population that pays for it will never be smaller. On a domain this project owns,
+it is the last time the URL has to move.
+
 ## Working, and verified rather than assumed
 
 | | Evidence |
@@ -18,6 +29,7 @@ it untrue.
 | Auto-merge tier rules | Six scenarios exercised in a real git repository: manifest/minor merges, major bump holds, `binaries` holds, no `SIG_KEY` holds, a diff touching `SIG_KEY_ID` holds, the daily ceiling holds |
 | Verify before read | `tools/fetch.sh` checks the signature before parsing, and cross-checks `repo` and `tag` inside the manifest — the signature says *who*, never *what about* |
 | Ingest without a key | The build job runs contributed fetch scripts and never sees the signing key; the key appears only after the bytes are already in an artifact |
+| The feed on its own domain | `owfeed verify` passes six checks against `https://repo.owfeed.org`, and luci-theme-footstrap installs the published theme by name from it on a real router |
 
 ## Built but not yet exercised in anger
 
