@@ -63,23 +63,30 @@ download() {
 # Serving the source from the same origin as the binary is the first option, and it is
 # the only one that needs no promise anybody has to remember to keep for three years.
 #
-# What this can and cannot claim: it serves exactly the archive upstream published for
-# the pinned tag, byte-checked, so the feed offers the same source upstream offers and
-# cannot drift from it. Whether that archive is complete corresponding source is
-# upstream's assertion, not this feed's -- and it is the same assertion every consumer
-# of upstream already relies on.
+# This runs for every package, not only the copyleft ones. Deciding per package would
+# mean this repository holding an opinion about someone else's licence; fetching
+# always means the source is simply there, and the question never has to be asked at
+# contribution time.
+#
+# What this can and cannot claim: it serves the archive for the pinned tag, and
+# records the sha256 of exactly what it served. So the feed offers what upstream
+# offers, and what it handed out stays identifiable. Whether that archive is complete
+# corresponding source is upstream's assertion, not this feed's -- the same assertion
+# every other consumer of that release already relies on.
 fetch_source() {
-	[ -n "${SOURCE_URL:-}" ] || return 0
-	[ -n "${SOURCE_SHA256:-}" ] || {
-		echo "$NAME: SOURCE_URL is set without SOURCE_SHA256" >&2
-		exit 1
-	}
+	# Default to the tag's own archive. GitHub generates one for EVERY tag, whether
+	# or not the author attached anything to the release -- so a package does not
+	# need its upstream to have thought about this, and the two-line-per-package
+	# version of this rule was a limitation of the first implementation rather than
+	# of the licence. Set SOURCE_URL to override, which is what a project hosted
+	# somewhere other than GitHub needs.
+	url="${SOURCE_URL:-https://github.com/${REPO}/archive/refs/tags/${TAG}.tar.gz}"
+
 	mkdir -p "$DIST/sources"
 	# Named for the package and version, because that is the pair a user holding a
 	# binary has: `apk info` tells them both, and nothing else identifies which
 	# source goes with what they installed.
-	ext="${SOURCE_URL##*/}"
-	case "$ext" in
+	case "$url" in
 	*.tar.gz|*.tgz) ext="tar.gz" ;;
 	*.tar.xz)       ext="tar.xz" ;;
 	*.tar.bz2)      ext="tar.bz2" ;;
@@ -87,8 +94,43 @@ fetch_source() {
 	*)              ext="tar.gz" ;;
 	esac
 	dest="$DIST/sources/${NAME}-${VERSION}.${ext}"
-	download "$SOURCE_URL" "$dest" "$SOURCE_SHA256"
-	printf '%s %s %s\n' "$NAME" "$VERSION" "$(basename "$dest")" >> "$DIST/sources/staged.txt"
+
+	if [ -n "${SOURCE_SHA256:-}" ]; then
+		# Pinned, for a stable release asset an author attached deliberately.
+		download "$url" "$dest" "$SOURCE_SHA256"
+	else
+		# Unpinned, and that is a considered difference rather than an oversight.
+		#
+		# Everything else this script fetches gets installed on somebody's router,
+		# so a pin is what stands between a replaced artifact and a compromised
+		# device. This archive is never installed and never executed: it is served
+		# as evidence, to satisfy the licence's source condition. What identifies it
+		# is the TAG, and the tag is pinned right here in upstream.sh.
+		#
+		# Pinning it anyway would cost more than it buys. GitHub's generated tag
+		# archives are not promised to be byte-stable over time -- they have been
+		# regenerated before -- so a pinned hash turns somebody else's
+		# infrastructure change into a red publish for a file nobody runs.
+		#
+		# The hash of what was actually served is recorded below and published, so
+		# the archive this feed hands out is still identifiable and still auditable.
+		# A failure here is reported and not fatal, deliberately. Whether this
+		# package NEEDS source is decided by its licence, and the licence is not
+		# known until the index is built -- so tools/sources.sh is what refuses,
+		# per package, once it can read one. Failing here instead would take down
+		# the publish of a permissive package whose upstream simply moved a tag.
+		if ! get "$url" "$dest"; then
+			echo "!! $NAME: no source archive at $url" >&2
+			echo "   set SOURCE_URL in packages/$NAME/upstream.sh if the source lives elsewhere;" >&2
+			echo "   if this package is copyleft the publish will refuse it later, by name" >&2
+			rm -f "$dest"
+			return 0
+		fi
+	fi
+
+	sum="$(sha256sum "$dest" | cut -d' ' -f1)"
+	printf '%s %s %s %s %s\n' "$NAME" "$VERSION" "$(basename "$dest")" "$sum" "$url" \
+		>> "$DIST/sources/staged.txt"
 	echo ">> $NAME: staged corresponding source $(basename "$dest")"
 }
 

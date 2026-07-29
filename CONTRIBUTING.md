@@ -141,30 +141,30 @@ index entirely rather than present and unresolvable:
   releases: ["25.12"]
 ```
 
-### If the package is copyleft, pin its source too
+### Source is fetched for you
 
-A package declaring GPL, LGPL, AGPL, MPL, EPL or CDDL cannot be published here without the
-corresponding source served beside it. That is not a house rule: GPLv2 §3 conditions distributing a
-binary on providing source, and this feed re-serving upstream's bytes is a second act of
-distribution carrying the obligation again. Linking to the repository satisfies none of the three
-options the licence gives.
+Nothing to declare. The feed fetches the archive GitHub generates for your pinned tag — which
+exists for every tag, whether or not you attached anything to the release — and serves it beside
+the binary at `https://repo.owfeed.org/sources/`, listed with its sha256 in
+[`sources/index.txt`](https://repo.owfeed.org/sources/index.txt).
 
-Two more lines, and the feed serves the source from the same URL as the binary:
+That is what lets this feed carry copyleft packages at all. GPLv2 §3 conditions distributing a
+binary on providing source, and a feed re-serving upstream's bytes is a second act of distribution
+carrying the obligation again; linking to a repository satisfies none of the options the licence
+gives. Serving the archive from the same origin as the binary does.
+
+One line, only if your source is not at that address:
 
 ```sh
-SOURCE_URL="https://github.com/owner/project/archive/refs/tags/v1.2.3.tar.gz"
-SOURCE_SHA256="9f2c…"
+SOURCE_URL="https://git.example.org/project/snapshot/project-1.2.3.tar.gz"
+SOURCE_SHA256="9f2c…"   # optional; pin it when the archive is a stable release asset
 ```
 
-`tools/sources.sh` runs before the publish, reads each package's licence out of the built index and
-fails the run if a copyleft package has no source for that exact version. Nothing is published in
-that case, so this is enforced rather than remembered.
-
-The licence comes from the metadata inside your package — the same string `apk info` shows — so
-there is nothing to declare here about it, and nothing to keep in sync when you relicense.
-
-If your release publishes no source archive at all, this feed cannot carry the package: there is
-nothing for it to serve. Cutting a release with the tarball attached is usually the smallest fix.
+The licence itself comes from the metadata inside your package — the same string `apk info` shows
+on the router — so there is nothing to declare here and nothing to keep in sync when you
+relicense. `tools/sources.sh` reads it out of the built index before the publish and refuses a
+copyleft package that has no source for that exact version, so this is enforced rather than
+remembered.
 
 ### Then
 

@@ -78,14 +78,23 @@ printf '%s\n' "$packages" | while IFS="$TAB" read -r name version licence; do
 	src="$(find "$SRC" -maxdepth 1 -type f -name "${name}-${version}.*" ! -name '*.txt' | head -1)"
 
 	if [ -n "$src" ]; then
-		printf '%s\t%s\t%s\t%s\n' "$name" "$version" "${licence:-unstated}" "$(basename "$src")" >> "$listed"
+		# The sha256 of what was actually served, and the URL it came from. The
+		# archive itself is fetched unpinned -- see tools/fetch.sh for why -- so
+		# recording what was handed out is what keeps it identifiable afterwards.
+		sum="$(sha256sum "$src" | cut -d' ' -f1)"
+		origin="$(awk -v n="$name" -v v="$version" '$1==n && $2==v {print $5; exit}' \
+			"$DIST/sources/staged.txt" 2>/dev/null || true)"
+		printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+			"$name" "$version" "${licence:-unstated}" "$(basename "$src")" \
+			"$sum" "${origin:-unrecorded}" >> "$listed"
 		continue
 	fi
 
 	is_copyleft "${licence:-}" || continue
 	{
 		echo "NO SOURCE $name $version: declares \`$licence\`, and this feed serves no source for it"
-		echo "  add SOURCE_URL and SOURCE_SHA256 to packages/$name/upstream.sh -- see LEGAL.md"
+		echo "  the tag's own archive could not be fetched, so set SOURCE_URL in"
+		echo "  packages/$name/upstream.sh to where the source actually lives -- see LEGAL.md"
 	} >&2
 	echo "$name $version" >> "$missing"
 done
@@ -95,7 +104,7 @@ done
 	echo "# same origin as the binaries so that GPLv2 §3(a) is satisfied by the feed"
 	echo "# itself rather than by a link to somewhere else. See LEGAL.md."
 	echo "#"
-	echo "# package${TAB}version${TAB}licence${TAB}file"
+	echo "# package${TAB}version${TAB}licence${TAB}file${TAB}sha256${TAB}origin"
 	sort "$listed"
 } > "$SRC/index.txt"
 

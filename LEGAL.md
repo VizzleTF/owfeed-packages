@@ -114,11 +114,19 @@ it. Whether that archive is *complete corresponding source* is upstream's assert
 every other consumer of that release already relies on. Where a project ships no source archive
 with its release, the feed cannot carry it: there is nothing to serve.
 
-**So: can this feed carry GPL packages?** Yes, provided the package's release includes a source
-archive to pin. That is the whole condition, and the check enforces it.
+**So: can this feed carry GPL packages?** Yes, and nothing has to be declared per package to make
+it so. The source archive defaults to the one GitHub generates for the pinned tag, which exists for
+every tag whether or not its author attached anything, so the fetch finds source for essentially
+any GitHub-hosted project on its own. `SOURCE_URL` exists for a project hosted elsewhere.
 
-The source obligation was the blocker and it no longer is: `SOURCE_URL` and `SOURCE_SHA256` in a
-package's `upstream.sh` are all it takes, and the publish refuses without them. What remains before
+The earlier version of this asked each package to pin `SOURCE_URL` and `SOURCE_SHA256` by hand,
+and read as though the licence imposed that. It did not — the licence asks for source alongside
+the binary, and where the source is fetched from was this repository's choice. The condition that
+remains is the licence's own and cannot be engineered away: **a copyleft binary may only be
+redistributed with source.** What is gone is the paperwork around it.
+
+The source obligation was the blocker and it no longer is: source is fetched for every package
+automatically, and the publish refuses a copyleft package that ended up without one. What remains before
 podkop could be carried is the part no script settles — asking the author. The contribution flow
 was exercised against it on a branch, which is how the `v`-tag assumption in `tools/fetch.sh` was
 found and fixed, and the branch was not merged.
