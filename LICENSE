@@ -1,10 +1,3 @@
-This licence covers this repository's own content -- the scripts under tools/, the
-workflows, the package definitions and the documentation.
-
-It does NOT cover the packages this feed publishes. Those are other people's work,
-carried under their own terms, and each one declares its licence in the index and in
-`apk info` on the router. See LEGAL.md.
-
 MIT License
 
 Copyright (c) 2026 VizzleTF

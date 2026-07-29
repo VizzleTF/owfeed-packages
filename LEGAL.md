@@ -5,6 +5,18 @@
 **This is not legal advice.** It is what was read in the licences and policies of the packages this
 feed carries, written down so the decisions are reviewable rather than assumed.
 
+## What this repository's own licence covers
+
+`LICENSE` is MIT, and it covers **this repository's own content** — the scripts under `tools/`, the
+workflows, the package definitions in `packages/`, and the documentation.
+
+It does not cover the packages this feed publishes. Those are other people's work, carried under
+their own terms, and each one declares its licence in the index and in `apk info` on the router.
+That distinction used to be written as a preamble above the MIT text in `LICENSE` itself, which had
+a cost worth more than the convenience: GitHub's licence detector reported the repository as
+`NOASSERTION`, so a feed that asks people to install a signing key showed no licence at all on its
+own front page. The caveat lives here instead, where the rest of the answer already was.
+
 ## The short version
 
 A licence that permits redistribution is not permission to do anything you like. Three separate
