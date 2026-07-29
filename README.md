@@ -23,7 +23,7 @@ wget -O subscribe.sh https://repo.owfeed.org/subscribe.sh && less subscribe.sh &
 ### By hand, OpenWrt 25.12 and later
 
 ```sh
-# HTTPS on a stock image needs these two first.
+# HTTPS needs these. Stock images have them; custom builds may not.
 apk add ca-bundle libustream-mbedtls
 
 wget https://repo.owfeed.org/owfeed-packages.pem -O /etc/apk/keys/owfeed-packages.pem
