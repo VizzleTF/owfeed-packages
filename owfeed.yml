@@ -44,6 +44,19 @@ signing:
   # signature blocks are additive and nothing here strips them.
   sign-packages: false
 
+  # Every package must carry a signature by a key pinned in keys/.
+  #
+  # This feed signs the index and not the packages, so without this a published .apk
+  # holds no evidence of who built it, and "the author is responsible for this package"
+  # is a claim nobody can test. An author signature can be checked by somebody who does
+  # not trust this feed at all, which is precisely what the index cannot do.
+  #
+  # A package without one is left out of the index rather than failing the whole tree —
+  # one author who has not adopted signing costs their own package and nobody else's —
+  # and the exclusion is recorded, so `doctor` reports it as OWF407 rather than letting
+  # it look like a build that half-failed.
+  author-keys: ./keys
+
 publish:
   - target: github-pages
 
