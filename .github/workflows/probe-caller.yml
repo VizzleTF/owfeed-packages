@@ -1,7 +1,0 @@
-name: probe-caller
-on:
-  workflow_dispatch:
-jobs:
-  probe:
-    uses: VizzleTF/owfeed/.github/workflows/probe.yml@main
-    secrets: inherit
