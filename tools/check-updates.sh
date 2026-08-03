@@ -216,9 +216,29 @@ can be merged.")"
 		# Even then it is refused twice over, because a signature answers "did the
 		# author publish this" and not "should it go out unread". An upstream whose
 		# release key is stolen signs perfectly.
+		#
+		# ARMING IT IS NOT ALLOWED TO FAIL THE RUN, and that is the whole point of the
+		# `||` below. The job's product is the pull request, and by this line it exists:
+		# the branch is pushed, the diff is a version and its checksums, the evidence is
+		# in the body. Auto-merge is a convenience on top. Under `set -e` a refusal from
+		# GitHub took the whole check down AFTER the work had succeeded -- the run went
+		# red, which reads as "no update was found" while an update was sitting open, and
+		# every package checked after this one was skipped.
+		#
+		# GitHub refuses for two ordinary reasons, neither of them a problem with the
+		# update: the repository does not have "Allow auto-merge" enabled, and a pull
+		# request that is ALREADY mergeable with nothing left to wait for cannot be armed
+		# -- there is nothing to wait for, so it must simply be merged. Both are reported
+		# here rather than swallowed, because a silent `|| true` would leave a pull
+		# request nobody knows is waiting.
 		if [ "$automerge" = "yes" ]; then
-			gh pr merge --squash --auto --delete-branch "$url" >/dev/null
-			echo "$name: will merge itself once the checks pass"
+			if gh pr merge --squash --auto --delete-branch "$url" >/dev/null 2>&1; then
+				echo "$name: will merge itself once the checks pass"
+			else
+				echo "$name: AUTO-MERGE NOT ARMED -- the pull request is open and needs merging by hand"
+				echo "  either the repository has no 'Allow auto-merge', or the pull request is"
+				echo "  already mergeable and GitHub has nothing to wait for"
+			fi
 		fi
 		git checkout -q -
 		git checkout -q "$up"
